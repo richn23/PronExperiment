@@ -1,0 +1,51 @@
+# =============================================================================
+# Secrets — anything ending in local-config.js (but NOT *.example.js)
+# =============================================================================
+prototype-v2/local-config.js
+prototype/local-config.js
+**/local-config.js
+
+# Generic env files in case we move to a server-side proxy later
+.env
+.env.*
+!.env.example
+
+# =============================================================================
+# OS noise
+# =============================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# =============================================================================
+# Editor / IDE
+# =============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# =============================================================================
+# Node / npm (in case we add tooling later)
+# =============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json.bak
+
+# =============================================================================
+# Build / cache outputs (none yet, but harmless to pre-empt)
+# =============================================================================
+dist/
+build/
+.cache/
+
+# =============================================================================
+# Session JSON dumps — only the test fixture is committed; live runs aren't
+# =============================================================================
+aze-session-*.json
+!prototype-v2/scoring.test.html

@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AZE — Pronunciation Focus Test</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0B0D1A;
+    --bg-card: #141628;
+    --bg-surface: #1C1F38;
+    --bg-elevated: #232747;
+    --border: rgba(255,255,255,0.07);
+    --border-accent: rgba(255,255,255,0.12);
+    --gold: #E5A832;
+    --gold-dim: rgba(229,168,50,0.12);
+    --gold-glow: rgba(229,168,50,0.25);
+    --green: #2ECC8B;
+    --green-dim: rgba(46,204,139,0.12);
+    --purple: #8B5CF6;
+    --purple-dim: rgba(139,92,246,0.12);
+    --red: #EF4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --cyan: #06B6D4;
+    --blue: #3B82F6;
+    --text: #F0F0F5;
+    --text-sec: #9CA3BF;
+    --text-muted: #6B7294;
+    --radius: 14px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Screens ────────────────────────── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    min-height: 100vh;
+    animation: fadeIn 0.4s ease;
+  }
+  .screen.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ── Top Nav Bar ────────────────────── */
+  .topnav {
+    display: flex;
+    align-items: center;
+    padding: 12px 32px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+  .topnav-icon { color: var(--gold); display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+  .topnav-icon svg { width: 18px; height: 18px; }
+
+  /* ── Progress Bar (matching AZE style) ── */
+  .progress-track {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 0;
+    padding: 0 12px;
+  }
+  .prog-line { flex: 1; height: 3px; background: var(--border-accent); border-radius: 2px; transition: background 0.4s; }
+  .prog-line.done { background: var(--gold); }
+  .prog-line.active { background: linear-gradient(90deg, var(--gold), var(--border-accent)); }
+  .prog-dot {
+    width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border-accent);
+    background: transparent; flex-shrink: 0; transition: all 0.3s;
+  }
+  .prog-dot.done { border-color: var(--green); background: var(--green); }
+  .prog-dot.active { border-color: var(--gold); background: var(--gold); box-shadow: 0 0 12px var(--gold-glow); }
+
+  /* ── Timer Row ──────────────────────── */
+  .timer-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 32px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    gap: 14px;
+    font-size: 14px;
+    color: var(--text-sec);
+  }
+  .timer-row .clock { color: var(--gold); }
+  .timer-row .qnum { font-weight: 600; color: var(--text); }
+
+  /* ── Main Content Area ──────────────── */
+  .content { flex: 1; display: flex; padding: 0; }
+  .content-left {
+    flex: 1;
+    padding: 32px 40px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+  .content-right {
+    width: 420px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  /* ── Question Badge ─────────────────── */
+  .q-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid var(--gold);
+    border-radius: 20px;
+    color: var(--gold);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    width: fit-content;
+  }
+  .q-badge svg { width: 14px; height: 14px; }
+
+  /* ── Task Type Label ────────────────── */
+  .task-type {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--purple);
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .task-type-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--purple); }
+
+  .instruction { font-size: 15px; color: var(--text-sec); margin-bottom: 16px; }
+  .prompt { font-size: 20px; font-weight: 700; line-height: 1.5; margin-bottom: 20px; }
+  .sub-prompts { list-style: none; padding-left: 0; }
+  .sub-prompts li {
+    font-size: 15px;
+    color: var(--text-sec);
+    padding: 6px 0;
+    padding-left: 20px;
+    position: relative;
+  }
+  .sub-prompts li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 13px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+
+  /* ── Sentence Display ───────────────── */
+  .sentence-display {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    font-size: 22px;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  /* ── Word Display ───────────────────── */
+  .word-display {
+    text-align: center;
+    padding: 48px 32px;
+  }
+  .word-display .word {
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .word-display .phonetic {
+    font-size: 20px;
+    color: var(--text-muted);
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  /* ── Image Placeholder ──────────────── */
+  .image-placeholder {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+    aspect-ratio: 16/10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .image-placeholder svg { width: 48px; height: 48px; opacity: 0.4; }
+
+  /* ── Audio Player (Listen & Repeat) ── */
+  .audio-player {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .play-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  .play-btn:hover { transform: scale(1.08); }
+  .play-btn svg { width: 20px; height: 20px; fill: #0B0D1A; }
+  .waveform { flex: 1; height: 36px; position: relative; overflow: hidden; border-radius: 4px; }
+  .waveform-bars { display: flex; align-items: center; height: 100%; gap: 2px; }
+  .waveform-bar {
+    width: 3px; border-radius: 2px; background: var(--gold-dim);
+    transition: background 0.2s;
+  }
+  .waveform-bar.active { background: var(--gold); }
+  .audio-time { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  /* ── Prep Time Circle ───────────────── */
+  .prep-section { text-align: center; }
+  .prep-icon { color: var(--gold); margin-bottom: 12px; }
+  .prep-icon svg { width: 28px; height: 28px; }
+  .prep-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .prep-desc { font-size: 13px; color: var(--text-sec); line-height: 1.6; max-width: 280px; margin: 0 auto 24px; }
+  .timer-circle {
+    width: 120px; height: 120px;
+    position: relative;
+    margin: 0 auto 24px;
+  }
+  .timer-circle svg { width: 100%; height: 100%; }
+  .timer-ring-bg { fill: none; stroke: var(--bg-surface); stroke-width: 6; }
+  .timer-ring-fill {
+    fill: none; stroke: var(--gold); stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear;
+  }
+  .timer-num {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .timer-num .big { font-size: 36px; font-weight: 800; color: var(--gold); }
+  .timer-num .unit { font-size: 12px; color: var(--text-muted); }
+
+  /* ── Recording State ────────────────── */
+  .rec-section { text-align: center; }
+  .rec-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 18px;
+    border: 1px solid rgba(46,204,139,0.3);
+    background: var(--green-dim);
+    border-radius: 20px;
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .rec-time {
+    font-size: 52px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    margin-bottom: 24px;
+  }
+
+  /* ── Audio Visualizer ───────────────── */
+  .visualizer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 40px;
+    margin-bottom: 32px;
+  }
+  .viz-bar {
+    width: 4px;
+    border-radius: 2px;
+    background: var(--gold);
+    animation: vizBounce 0.6s ease infinite alternate;
+  }
+  @keyframes vizBounce {
+    from { height: 4px; opacity: 0.3; }
+    to { height: var(--h); opacity: 1; }
+  }
+
+  /* ── Stop Button ────────────────────── */
+  .stop-btn {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--bg-surface);
+    border: 3px solid var(--border-accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    transition: all 0.2s;
+  }
+  .stop-btn:hover { border-color: var(--red); background: var(--red-dim); }
+  .stop-btn .inner { width: 18px; height: 18px; border-radius: 3px; background: var(--text-sec); }
+
+  /* ── CTA Buttons ────────────────────── */
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+  .cta-gold { background: var(--gold); color: #0B0D1A; }
+  .cta-gold:hover { background: #D49A28; transform: translateY(-1px); }
+  .cta-outline {
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+  }
+  .cta-outline:hover { background: var(--gold-dim); }
+  .cta-green { background: var(--green); color: #0B0D1A; }
+  .cta-green:hover { background: #25B578; }
+
+  .speak-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    border: 1px solid var(--border-accent);
+    padding: 6px 16px;
+    border-radius: 20px;
+    display: inline-block;
+  }
+
+  /* ── Bottom Progress Bar ────────────── */
+  .bottom-bar {
+    height: 4px;
+    background: var(--gold);
+    width: 0%;
+    transition: width 0.5s ease;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+  }
+
+  /* ── Intro Screen ───────────────────── */
+  .intro-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+  }
+  .intro-back {
+    position: absolute;
+    top: 24px;
+    left: 32px;
+    color: var(--text-sec);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 22px;
+    font-family: inherit;
+  }
+  .intro-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .intro-subtitle { font-size: 15px; color: var(--text-sec); margin-bottom: 32px; }
+  .intro-icon-box {
+    width: 80px; height: 80px;
+    background: var(--bg-surface);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+  }
+  .intro-icon-box svg { width: 32px; height: 32px; color: var(--gold); }
+  .intro-label { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .intro-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; }
+  .rules-box {
+    text-align: left;
+    max-width: 520px;
+    margin: 0 auto 32px;
+  }
+  .rules-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+  .rule-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 14px;
+    color: var(--text-sec);
+    line-height: 1.5;
+  }
+  .rule-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--purple);
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  /* ── Results Screen ─────────────────── */
+  .results-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 32px;
+    overflow-y: auto;
+  }
+  .results-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+  .results-subtitle { font-size: 14px; color: var(--text-sec); margin-bottom: 32px; }
+
+  .result-ring-wrap { position: relative; margin-bottom: 8px; }
+  .result-ring { width: 180px; height: 180px; }
+  .result-ring .bg { fill: none; stroke: var(--bg-surface); stroke-width: 10; }
+  .result-ring .fill {
+    fill: none; stroke-width: 10; stroke-linecap: round;
+    stroke: var(--gold);
+    filter: drop-shadow(0 0 10px var(--gold-glow));
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
+  }
+  .result-num {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    text-align: center;
+  }
+  .result-num .val {
+    font-size: 52px; font-weight: 800;
+    background: linear-gradient(135deg, var(--gold), #F5D78E);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .result-num .unit { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .result-band { font-size: 20px; font-weight: 700; color: var(--green); margin-bottom: 24px; }
+
+  /* Radar */
+  .result-radar { margin-bottom: 28px; }
+  .result-radar svg { width: 260px; height: 260px; }
+
+  /* Dim pills */
+  .dim-pills { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 24px; max-width: 600px; }
+  .dim-pill {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 150px;
+  }
+  .dim-pill-name { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .dim-pill-score { font-size: 24px; font-weight: 800; }
+  .dim-pill-band { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
+
+  /* Clarity indicator */
+  .clarity-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 24px;
+    margin-bottom: 28px;
+    max-width: 500px;
+    width: 100%;
+  }
+  .clarity-bar-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .clarity-bar-val { font-size: 20px; font-weight: 800; }
+  .clarity-bar-desc { font-size: 12px; color: var(--text-sec); flex: 1; }
+
+  .result-cta { margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 0: INTRO                                -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen active" id="screen-intro">
+  <div class="intro-center" style="position:relative;">
+    <button class="intro-back">←</button>
+    <div class="intro-title">Pronunciation Focus</div>
+    <div class="intro-subtitle">You are about to begin the pronunciation assessment</div>
+
+    <div class="intro-icon-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </div>
+    <div class="intro-label">Pronunciation Focus</div>
+    <div class="intro-meta">4 Questions / 5 Minutes</div>
+
+    <div class="rules-box">
+      <div class="rules-title">General Rules & Requirements:</div>
+      <div class="rule-item"><div class="rule-dot"></div>Respond to 4 spoken prompts to evaluate your pronunciation across five dimensions.</div>
+      <div class="rule-item"><div class="rule-dot"></div>Task types: Read Aloud (words), Read Aloud (sentences), Listen & Repeat, Describe the Picture.</div>
+      <div class="rule-item"><div class="rule-dot"></div>Each question has preparation time before recording begins automatically.</div>
+      <div class="rule-item"><div class="rule-dot"></div>Ensure your microphone is working properly before you proceed.</div>
+    </div>
+
+    <button class="cta cta-gold" onclick="goTo('screen-q1-prep')">Start</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 1: READ ALOUD — WORDS (Prep)            -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-q1-prep">
+  <div class="topnav">
+    <div class="topnav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      Pronunciation Focus
+    </div>
+    <div class="progress-track">
+      <div class="prog-dot active"></div>
+      <div class="prog-line active"></div>
+      <div class="prog-dot"></div>
+      <div class="prog-line"></div>
+      <div class="prog-dot"></div>
+      <div class="prog-line"></div>
+      <div class="prog-dot"></div>
+    </div>
+  </div>
+  <div class="timer-row">
+    <span class="clock">⏱</span>
+    <span>4:58</span>
+    <span class="qnum">Question 1 of 4</span>
+  </div>
+
+  <div class="content">
+    <div class="content-left">
+      <div class="q-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Question 1 of 4
+      </div>
+      <div class="task-type"><div class="task-type-dot"></div>READ ALOUD — WORDS</div>
+      <div class="instruction">Read each word clearly.</div>
+
+      <div class="word-display">
+        <div class="word" style="color: var(--text);">comfortable</div>
+        <div class="phonetic">/ˈkʌmf.tə.bəl/</div>
+      </div>
+
+      <div style="margin-top: auto; display: flex; gap: 24px; flex-wrap: wrap;">
+        <div class="word-display" style="padding:16px; text-align:center; flex:1; background:var(--bg-surface); border-radius:var(--radius);">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Next words</div>
+          <div style="font-size:18px;color:var(--text-sec);">photograph &nbsp;·&nbsp; environment &nbsp;·&nbsp; beautiful</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-right">
+      <div class="prep-section">
+        <div class="prep-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        </div>
+        <div class="prep-title">Preparation Time</div>
+        <div class="prep-desc">Read the words and prepare. Recording will start automatically when the timer ends — or tap below when ready.</div>
+        <div class="timer-circle">
+          <svg viewBox="0 0 120 120">
+            <circle class="timer-ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="timer-ring-fill" cx="60" cy="60" r="52"
+              stroke-dasharray="326.73" stroke-dashoffset="82"
+              transform="rotate(-90 60 60)"/>
+          </svg>
+          <div class="timer-num">
+            <div class="big">30</div>
+            <div class="unit">seconds</div>
+          </div>
+        </div>
+        <button class="cta cta-outline" onclick="goTo('screen-q1-rec')" style="margin-bottom:12px;">
+          🎙 I'm ready — start recording now
+        </button>
+        <div class="speak-hint">Speak for at least 5s, max 30s</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-bar" style="width: 5%;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 1b: READ ALOUD — WORDS (Recording)      -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-q1-rec">
+  <div class="topnav">
+    <div class="topnav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      Pronunciation Focus
+    </div>
+    <div class="progress-track">
+      <div class="prog-dot active"></div>
+      <div class="prog-line active"></div>
+      <div class="prog-dot"></div>
+      <div class="prog-line"></div>
+      <div class="prog-dot"></div>
+      <div class="prog-line"></div>
+      <div class="prog-dot"></div>
+    </div>
+  </div>
+  <div class="timer-row">
+    <span class="clock">⏱</span>
+    <span>4:50</span>
+    <span class="qnum">Question 1 of 4</span>
+  </div>
+
+  <div class="content">
+    <div class="content-left">
+      <div class="q-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Question 1 of 4
+      </div>
+      <div class="task-type"><div class="task-type-dot"></div>READ ALOUD — WORDS</div>
+      <div class="instruction">Read each word clearly.</div>
+
+      <div class="word-display">
+        <div class="word" style="color: var(--gold);">comfortable</div>
+        <div class="phonetic">/ˈkʌmf.tə.bəl/</div>
+      </div>
+
+      <div style="margin-top:auto;">
+        <div style="padding:16px; text-align:center; background:var(--bg-surface); border-radius:var(--radius);">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Next words</div>
+          <div style="font-size:18px;color:var(--text-sec);">photograph &nbsp;·&nbsp; environment &nbsp;·&nbsp; beautiful</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-right">
+      <div class="rec-section">
+        <div class="rec-badge"><div class="rec-dot"></div> RECORDING</div>
+        <div class="rec-time">00:03</div>
+
+        <div class="visualizer" id="viz1"></div>
+
+        <div class="stop-btn" onclick="goTo('screen-q2-prep')"><div class="inner"></div></div>
+        <div class="speak-hint">Speak for at least 5s, max 30s</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-bar" style="width: 15%;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 2: READ ALOUD — SENTENCES (Prep)        -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-q2-prep">
+  <div class="topnav">
+    <div class="topnav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      Pronunciation Focus
+    </div>
+    <div class="progress-track">
+      <div class="prog-dot done"></div>
+      <div class="prog-line done"></div>
+      <div class="prog-dot active"></div>
+      <div class="prog-line"></div>
+      <div class="prog-dot"></div>
+      <div class="prog-line"></div>
+      <div class="prog-dot"></div>
+    </div>
+  </div>
+  <div class="timer-row">
+    <span class="clock">⏱</span>
+    <span>4:12</span>
+    <span class="qnum">Question 2 of 4</span>
+  </div>
+
+  <div class="content">
+    <div class="content-left">
+      <div class="q-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Question 2 of 4
+      </div>
+      <div class="task-type"><div class="task-type-dot" style="background:var(--cyan);"></div><span style="color:var(--cyan);">READ ALOUD — SENTENCE</span></div>
+      <div class="instruction">Read the sentence below clearly and naturally.</div>
+
+      <div class="sentence-display">
+        The development of new technology has created many opportunities for people to improve their quality of life.
+      </div>
+
+      <div style="font-size:13px; color:var(--text-muted); margin-top:8px;">
+        Tip: Focus on connecting words smoothly — don't pause between each word.
+      </div>
+    </div>
+
+    <div class="content-right">
+      <div class="prep-section">
+        <div class="prep-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        </div>
+        <div class="prep-title">Preparation Time</div>
+        <div class="prep-desc">Read the sentence and prepare. Recording starts automatically when the timer ends.</div>
+        <div class="timer-circle">
+          <svg viewBox="0 0 120 120">
+            <circle class="timer-ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="timer-ring-fill" cx="60" cy="60" r="52"
+              stroke-dasharray="326.73" stroke-dashoffset="120"
+              transform="rotate(-90 60 60)"/>
+          </svg>
+          <div class="timer-num">
+            <div class="big">43</div>
+            <div class="unit">seconds</div>
+          </div>
+        </div>
+        <button class="cta cta-outline" onclick="goTo('screen-q2-rec')">
+          🎙 I'm ready — start recording now
+        </button>
+        <div class="speak-hint" style="margin-top:12px;">Speak for at least 10s, max 60s</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-bar" style="width: 28%;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 2b: READ ALOUD — SENTENCES (Recording)  -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-q2-rec">
+  <div class="topnav">
+    <div class="topnav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      Pronunciation Focus
+    </div>
+    <div class="progress-track">
+      <div class="prog-dot done"></div>
+      <div class="prog-line done"></div>
+      <div class="prog-dot active"></div>
+      <div class="prog-line"></div>
+      <div class="prog-dot"></div>
+      <div class="prog-line"></div>
+      <div class="prog-dot"></div>
+    </div>
+  </div>
+  <div class="timer-row"><span class="clock">⏱</span><span>3:45</span><span class="qnum">Question 2 of 4</span></div>
+
+  <div class="content">
+    <div class="content-left">
+      <div class="q-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Question 2 of 4</div>
+      <div class="task-type"><div class="task-type-dot" style="background:var(--cyan);"></div><span style="color:var(--cyan);">READ ALOUD — SENTENCE</span></div>
+      <div class="instruction">Read the sentence below clearly and naturally.</div>
+      <div class="sentence-display" style="border-color: rgba(229,168,50,0.2);">
+        The development of new technology has created many opportunities for people to improve their quality of life.
+      </div>
+    </div>
+    <div class="content-right">
+      <div class="rec-section">
+        <div class="rec-badge"><div class="rec-dot"></div> RECORDING</div>
+        <div class="rec-time">00:05</div>
+        <div class="visualizer" id="viz2"></div>
+        <div class="stop-btn" onclick="goTo('screen-q3-prep')"><div class="inner"></div></div>
+        <div class="speak-hint">Speak for at least 10s, max 60s</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-bar" style="width: 40%;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 3: LISTEN & REPEAT (Prep + Play)        -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-q3-prep">
+  <div class="topnav">
+    <div class="topnav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      Pronunciation Focus
+    </div>
+    <div class="progress-track">
+      <div class="prog-dot done"></div>
+      <div class="prog-line done"></div>
+      <div class="prog-dot done"></div>
+      <div class="prog-line done"></div>
+      <div class="prog-dot active"></div>
+      <div class="prog-line"></div>
+      <div class="prog-dot"></div>
+    </div>
+  </div>
+  <div class="timer-row"><span class="clock">⏱</span><span>3:10</span><span class="qnum">Question 3 of 4</span></div>
+
+  <div class="content">
+    <div class="content-left">
+      <div class="q-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Question 3 of 4</div>
+      <div class="task-type"><div class="task-type-dot" style="background:var(--green);"></div><span style="color:var(--green);">LISTEN & REPEAT</span></div>
+      <div class="instruction">Listen to the audio, then repeat what you hear as clearly as you can.</div>
+
+      <div class="audio-player">
+        <button class="play-btn">
+          <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+        </button>
+        <div class="waveform">
+          <div class="waveform-bars" id="waveformBars"></div>
+        </div>
+        <div class="audio-time">0:08</div>
+      </div>
+
+      <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 24px; margin-top:12px;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">What you'll hear</div>
+        <div style="font-size:16px; color:var(--text-sec); line-height:1.6;">
+          "I've been thinking about the environmental impact of modern transportation systems, especially in large cities."
+        </div>
+      </div>
+
+      <div style="font-size:13px; color:var(--text-muted); margin-top:12px;">
+        Tip: You can play the audio up to 2 times before recording begins.
+      </div>
+    </div>
+
+    <div class="content-right">
+      <div class="prep-section">
+        <div class="prep-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+        </div>
+        <div class="prep-title">Listen First</div>
+        <div class="prep-desc">Play the audio, then tap below to start recording your response.</div>
+        <div class="timer-circle">
+          <svg viewBox="0 0 120 120">
+            <circle class="timer-ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="timer-ring-fill" cx="60" cy="60" r="52"
+              stroke-dasharray="326.73" stroke-dashoffset="160"
+              transform="rotate(-90 60 60)"/>
+          </svg>
+          <div class="timer-num">
+            <div class="big">20</div>
+            <div class="unit">seconds</div>
+          </div>
+        </div>
+        <button class="cta cta-outline" onclick="goTo('screen-q3-rec')">
+          🎙 I'm ready — start recording now
+        </button>
+        <div class="speak-hint" style="margin-top:12px;">Speak for at least 10s, max 60s</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-bar" style="width: 52%;"></div>
+</div>
+
+<!-- SCREEN 3b: Listen & Repeat Recording -->
+<div class="screen" id="screen-q3-rec">
+  <div class="topnav">
+    <div class="topnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg> Pronunciation Focus</div>
+    <div class="progress-track">
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot active"></div><div class="prog-line"></div>
+      <div class="prog-dot"></div>
+    </div>
+  </div>
+  <div class="timer-row"><span class="clock">⏱</span><span>2:48</span><span class="qnum">Question 3 of 4</span></div>
+  <div class="content">
+    <div class="content-left">
+      <div class="q-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Question 3 of 4</div>
+      <div class="task-type"><div class="task-type-dot" style="background:var(--green);"></div><span style="color:var(--green);">LISTEN & REPEAT</span></div>
+      <div class="instruction">Repeat what you heard as clearly as you can.</div>
+      <div style="background:var(--bg-surface); border:1px solid rgba(229,168,50,0.15); border-radius:var(--radius); padding:20px 24px; font-size:16px; color:var(--text-sec); line-height:1.6;">
+        "I've been thinking about the environmental impact of modern transportation systems, especially in large cities."
+      </div>
+    </div>
+    <div class="content-right">
+      <div class="rec-section">
+        <div class="rec-badge"><div class="rec-dot"></div> RECORDING</div>
+        <div class="rec-time">00:07</div>
+        <div class="visualizer" id="viz3"></div>
+        <div class="stop-btn" onclick="goTo('screen-q4-prep')"><div class="inner"></div></div>
+        <div class="speak-hint">Speak for at least 10s, max 60s</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-bar" style="width: 62%;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 4: DESCRIBE THE PICTURE (Prep)          -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-q4-prep">
+  <div class="topnav">
+    <div class="topnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg> Pronunciation Focus</div>
+    <div class="progress-track">
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot active"></div>
+    </div>
+  </div>
+  <div class="timer-row"><span class="clock">⏱</span><span>2:15</span><span class="qnum">Question 4 of 4</span></div>
+  <div class="content">
+    <div class="content-left">
+      <div class="q-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Question 4 of 4</div>
+      <div class="task-type"><div class="task-type-dot" style="background:var(--gold);"></div><span style="color:var(--gold);">DESCRIBE THE PICTURE</span></div>
+      <div class="instruction">Describe what you see in the image below. Talk about the people, the place, and what is happening.</div>
+
+      <div class="image-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        <div style="font-size:13px;">Image: People at an outdoor market</div>
+      </div>
+
+      <ul class="sub-prompts">
+        <li>What can you see in the picture?</li>
+        <li>What are the people doing?</li>
+        <li>How would you describe the atmosphere?</li>
+      </ul>
+    </div>
+    <div class="content-right">
+      <div class="prep-section">
+        <div class="prep-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></div>
+        <div class="prep-title">Preparation Time</div>
+        <div class="prep-desc">Look at the picture and organise your thoughts. Recording will start automatically when the timer ends.</div>
+        <div class="timer-circle">
+          <svg viewBox="0 0 120 120">
+            <circle class="timer-ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="timer-ring-fill" cx="60" cy="60" r="52"
+              stroke-dasharray="326.73" stroke-dashoffset="50"
+              transform="rotate(-90 60 60)"/>
+          </svg>
+          <div class="timer-num"><div class="big">43</div><div class="unit">seconds</div></div>
+        </div>
+        <button class="cta cta-outline" onclick="goTo('screen-q4-rec')">🎙 I'm ready — start recording now</button>
+        <div class="speak-hint" style="margin-top:12px;">Speak for at least 30s, max 120s</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-bar" style="width: 72%;"></div>
+</div>
+
+<!-- SCREEN 4b: Describe the Picture Recording -->
+<div class="screen" id="screen-q4-rec">
+  <div class="topnav">
+    <div class="topnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg> Pronunciation Focus</div>
+    <div class="progress-track">
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot active"></div>
+    </div>
+  </div>
+  <div class="timer-row"><span class="clock">⏱</span><span>1:30</span><span class="qnum">Question 4 of 4</span></div>
+  <div class="content">
+    <div class="content-left">
+      <div class="q-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Question 4 of 4</div>
+      <div class="task-type"><div class="task-type-dot" style="background:var(--gold);"></div><span style="color:var(--gold);">DESCRIBE THE PICTURE</span></div>
+      <div class="instruction">Describe what you see in the image.</div>
+      <div class="image-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        <div style="font-size:13px;">Image: People at an outdoor market</div>
+      </div>
+    </div>
+    <div class="content-right">
+      <div class="rec-section">
+        <div class="rec-badge"><div class="rec-dot"></div> RECORDING</div>
+        <div class="rec-time">00:12</div>
+        <div class="visualizer" id="viz4"></div>
+        <div class="stop-btn" onclick="goTo('screen-results')"><div class="inner"></div></div>
+        <div class="speak-hint">Speak for at least 30s, max 120s</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-bar" style="width: 88%;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 5: RESULTS                              -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-results">
+  <div class="topnav">
+    <div class="topnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg> Pronunciation Focus</div>
+    <div class="progress-track">
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot done"></div><div class="prog-line done"></div>
+      <div class="prog-dot done"></div>
+    </div>
+  </div>
+
+  <div class="results-center">
+    <div class="results-title">Your Pronunciation Profile</div>
+    <div class="results-subtitle">Session completed — here's how your speech was perceived</div>
+
+    <div class="result-ring-wrap">
+      <svg class="result-ring" viewBox="0 0 180 180">
+        <circle class="bg" cx="90" cy="90" r="74"/>
+        <circle class="fill" cx="90" cy="90" r="74" stroke-dasharray="465" stroke-dashoffset="93" transform="rotate(-90 90 90)"/>
+      </svg>
+      <div class="result-num">
+        <div class="val">79</div>
+        <div class="unit">overall</div>
+      </div>
+    </div>
+    <div class="result-band">Generally clear</div>
+
+    <!-- Radar -->
+    <div class="result-radar"><svg id="resultRadar" viewBox="0 0 280 280"></svg></div>
+
+    <!-- Dimension pills -->
+    <div class="dim-pills">
+      <div class="dim-pill">
+        <div class="dim-pill-name">Phoneme Accuracy</div>
+        <div class="dim-pill-score" style="color:#7DD87D">87.4</div>
+        <div class="dim-pill-band">Most phonemes accurate</div>
+      </div>
+      <div class="dim-pill">
+        <div class="dim-pill-name">Fluency</div>
+        <div class="dim-pill-score" style="color:#7DD87D">84</div>
+        <div class="dim-pill-band">Generally fluent</div>
+      </div>
+      <div class="dim-pill">
+        <div class="dim-pill-name">Word Stress</div>
+        <div class="dim-pill-score" style="color:#2ECC8B">93</div>
+        <div class="dim-pill-band">Consistently accurate</div>
+      </div>
+      <div class="dim-pill">
+        <div class="dim-pill-name">Consistency</div>
+        <div class="dim-pill-score" style="color:#2ECC8B">95</div>
+        <div class="dim-pill-band">Highly consistent</div>
+      </div>
+      <div class="dim-pill">
+        <div class="dim-pill-name">Connected Speech</div>
+        <div class="dim-pill-score" style="color:#E5A832">65</div>
+        <div class="dim-pill-band">Noticeable drop in context</div>
+      </div>
+    </div>
+
+    <!-- Clarity -->
+    <div class="clarity-bar">
+      <div>
+        <div class="clarity-bar-label">Clarity</div>
+        <div class="clarity-bar-val" style="color:var(--gold)">88.9%</div>
+      </div>
+      <div class="clarity-bar-desc">Good clarity — most of your speech is clearly produced</div>
+    </div>
+
+    <button class="cta cta-gold result-cta" onclick="goTo('screen-intro')">Done — Return to Dashboard</button>
+  </div>
+  <div class="bottom-bar" style="width: 100%;"></div>
+</div>
+
+
+<script>
+// Navigation
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  // Build visualizers if needed
+  buildVisualizers();
+  // Build radar on results
+  if (screenId === 'screen-results') buildResultRadar();
+}
+
+// Build audio visualizer bars
+function buildVisualizers() {
+  ['viz1','viz2','viz3','viz4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.children.length === 0) {
+      let html = '';
+      for (let i = 0; i < 40; i++) {
+        const h = 6 + Math.random() * 30;
+        const delay = Math.random() * 0.8;
+        html += `<div class="viz-bar" style="--h:${h}px; animation-delay:${delay}s; height:${h}px;"></div>`;
+      }
+      el.innerHTML = html;
+    }
+  });
+}
+
+// Build waveform bars
+function buildWaveform() {
+  const el = document.getElementById('waveformBars');
+  if (el && el.children.length === 0) {
+    let html = '';
+    for (let i = 0; i < 80; i++) {
+      const h = 3 + Math.random() * 30;
+      const active = i < 30 ? ' active' : '';
+      html += `<div class="waveform-bar${active}" style="height:${h}px"></div>`;
+    }
+    el.innerHTML = html;
+  }
+}
+
+// Result radar
+function buildResultRadar() {
+  const svg = document.getElementById('resultRadar');
+  const cx = 140, cy = 140, maxR = 100;
+  const axes = [
+    { label: "Phoneme", value: 87.4 },
+    { label: "Fluency", value: 84 },
+    { label: "Stress", value: 93 },
+    { label: "Consistency", value: 95 },
+    { label: "Connected", value: 65 },
+    { label: "Clarity", value: 88.9 },
+  ];
+  const n = axes.length;
+  const step = (2*Math.PI)/n;
+  const start = -Math.PI/2;
+  let html = '';
+
+  // Grid
+  for (let ring = 1; ring <= 4; ring++) {
+    const r = (ring/4)*maxR;
+    const pts = [];
+    for (let i=0;i<n;i++) { const a=start+i*step; pts.push(`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`); }
+    html += `<polygon points="${pts.join(' ')}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+  }
+  for (let i=0;i<n;i++) { const a=start+i*step; html += `<line x1="${cx}" y1="${cy}" x2="${cx+maxR*Math.cos(a)}" y2="${cy+maxR*Math.sin(a)}" stroke="rgba(255,255,255,0.08)"/>`; }
+
+  // Data
+  const pts = [];
+  for (let i=0;i<n;i++) { const a=start+i*step; const r=(axes[i].value/100)*maxR; pts.push(`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`); }
+  html += `<polygon points="${pts.join(' ')}" fill="rgba(229,168,50,0.15)" stroke="#E5A832" stroke-width="2"/>`;
+
+  for (let i=0;i<n;i++) {
+    const a=start+i*step; const r=(axes[i].value/100)*maxR;
+    html += `<circle cx="${cx+r*Math.cos(a)}" cy="${cy+r*Math.sin(a)}" r="3.5" fill="#E5A832"/>`;
+    const lr = maxR+16;
+    const lx=cx+lr*Math.cos(a); const ly=cy+lr*Math.sin(a);
+    const anchor = Math.abs(Math.cos(a))<0.1?"middle":(Math.cos(a)>0?"start":"end");
+    const isCl = axes[i].label==="Clarity";
+    html += `<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="central" fill="${isCl?'rgba(6,182,212,0.7)':'rgba(255,255,255,0.45)'}" font-size="10" font-weight="500" font-family="Inter,sans-serif">${axes[i].label}</text>`;
+  }
+  svg.innerHTML = html;
+}
+
+// Init
+buildVisualizers();
+buildWaveform();
+</script>
+</body>
+</html>

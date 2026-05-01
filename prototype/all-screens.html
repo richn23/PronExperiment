@@ -1,0 +1,947 @@
+<\!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AZE Pronunciation Focus — All Test Screens</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0B0D1A;--bg-card:#141628;--bg-surface:#1C1F38;--bg-elevated:#232747;
+--border:rgba(255,255,255,0.07);--border-accent:rgba(255,255,255,0.12);
+--gold:#E5A832;--gold-dim:rgba(229,168,50,0.12);--gold-glow:rgba(229,168,50,0.25);
+--green:#2ECC8B;--green-dim:rgba(46,204,139,0.12);
+--purple:#8B5CF6;--purple-dim:rgba(139,92,246,0.12);
+--red:#EF4444;--red-dim:rgba(239,68,68,0.12);
+--cyan:#06B6D4;--text:#F0F0F5;--text-sec:#9CA3BF;--text-muted:#6B7294;--radius:14px;
+}
+body{font-family:'Inter',-apple-system,sans-serif;background:#080A14;color:var(--text);line-height:1.5}
+
+/* Gallery layout */
+.gallery-header{text-align:center;padding:48px 24px 16px}
+.gallery-header h1{font-size:32px;font-weight:800;background:linear-gradient(135deg,var(--gold),#F5D78E);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gallery-header p{color:var(--text-muted);font-size:14px;margin-top:8px}
+
+/* TOC */
+.toc{max-width:900px;margin:0 auto 40px;padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.toc a{padding:8px 16px;border-radius:8px;background:var(--bg-surface);color:var(--gold);text-decoration:none;font-size:13px;font-weight:600;border:1px solid var(--border);transition:all .2s}
+.toc a:hover{background:var(--gold-dim);border-color:var(--gold)}
+
+/* Section headers */
+.section-header{max-width:1200px;margin:48px auto 24px;padding:0 24px}
+.section-header h2{font-size:22px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:12px}
+.section-header h2 .dot{width:10px;height:10px;border-radius:50%;background:var(--gold)}
+.section-header p{color:var(--text-muted);font-size:13px;margin-top:4px;padding-left:22px}
+
+/* Screen grid */
+.screen-grid{max-width:1200px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(375px,1fr));gap:32px;margin-bottom:32px}
+
+/* Card wrapper */
+.card-wrap{display:flex;flex-direction:column;align-items:center}
+.card-label{font-size:13px;font-weight:600;color:var(--gold);margin-bottom:8px;text-align:center}
+.card-desc{font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center;max-width:340px}
+
+/* Phone frame */
+.phone{width:375px;height:667px;background:var(--bg);border-radius:20px;border:1px solid rgba(255,255,255,0.1);overflow:hidden;position:relative;display:flex;flex-direction:column}
+
+/* Top nav inside phone */
+.topnav{display:flex;align-items:center;padding:10px 16px;background:var(--bg-card);border-bottom:1px solid var(--border);gap:10px;flex-shrink:0}
+.topnav-icon{color:var(--gold);display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px}
+.topnav-icon svg{width:14px;height:14px}
+
+/* Progress dots */
+.prog{display:flex;align-items:center;flex:1;gap:0}
+.prog-line{flex:1;height:2px;background:var(--border-accent);border-radius:2px}
+.prog-line.done{background:var(--gold)}
+.prog-line.active{background:linear-gradient(90deg,var(--gold),var(--border-accent))}
+.prog-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--border-accent);background:transparent;flex-shrink:0}
+.prog-dot.done{border-color:var(--green);background:var(--green)}
+.prog-dot.active{border-color:var(--gold);background:var(--gold);box-shadow:0 0 8px var(--gold-glow)}
+
+/* Timer row */
+.timer-row{display:flex;align-items:center;padding:8px 16px;background:var(--bg-card);border-bottom:1px solid var(--border);gap:10px;font-size:12px;color:var(--text-sec);flex-shrink:0}
+.timer-row .clock{color:var(--gold)}
+
+/* Content area */
+.content{flex:1;display:flex;overflow:hidden}
+.content-left{flex:1;padding:20px;display:flex;flex-direction:column}
+.content-right{width:180px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border-left:1px solid var(--border)}
+
+/* Components */
+.q-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border:1px solid var(--gold);border-radius:16px;color:var(--gold);font-size:11px;font-weight:600;margin-bottom:12px;width:fit-content}
+.task-type{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--purple);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.task-type .dot{width:5px;height:5px;border-radius:50%;background:var(--purple)}
+.instruction{font-size:13px;color:var(--text-sec);margin-bottom:12px;line-height:1.6}
+.prompt{font-size:17px;font-weight:700;line-height:1.5;margin-bottom:12px}
+
+.sentence-box{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;font-size:16px;line-height:1.7;color:var(--text);margin-bottom:12px}
+
+.word-big{text-align:center;padding:24px 16px}
+.word-big .word{font-size:48px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+.word-big .phonetic{font-size:16px;color:var(--text-muted)}
+
+/* Buttons */
+.cta{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.cta-gold{background:var(--gold);color:#0B0D1A}
+.cta-outline{background:transparent;color:var(--gold);border:1px solid var(--gold)}
+.cta-green{background:var(--green);color:#0B0D1A}
+
+/* Recording state */
+.rec-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid rgba(46,204,139,0.3);background:var(--green-dim);border-radius:16px;color:var(--green);font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:8px}
+.rec-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.rec-time{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:1px;margin-bottom:12px;text-align:center}
+
+/* Visualizer */
+.visualizer{display:flex;align-items:center;justify-content:center;gap:2px;height:30px;margin-bottom:12px}
+.viz-bar{width:3px;border-radius:2px;background:var(--gold);animation:vizB .6s ease infinite alternate}
+@keyframes vizB{from{height:3px;opacity:.3}to{height:var(--h);opacity:1}}
+
+/* Stop button */
+.stop-btn{width:40px;height:40px;border-radius:50%;background:var(--bg-surface);border:2px solid var(--border-accent);display:flex;align-items:center;justify-content:center;margin:0 auto 8px}
+.stop-btn .inner{width:14px;height:14px;border-radius:3px;background:var(--text-sec)}
+
+.speak-hint{font-size:10px;color:var(--text-muted);border:1px solid var(--border-accent);padding:4px 10px;border-radius:12px;text-align:center}
+
+/* Audio player */
+.audio-player{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.play-btn{width:36px;height:36px;border-radius:50%;background:var(--gold);border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.play-btn svg{width:14px;height:14px;fill:#0B0D1A}
+.wave-bars{display:flex;align-items:center;gap:2px;flex:1;height:24px}
+.wave-bar{width:2px;border-radius:1px;background:var(--gold-dim)}
+.wave-bar.on{background:var(--gold)}
+.audio-time{font-size:11px;color:var(--text-muted)}
+
+/* Option buttons (Task 3) */
+.option-row{display:flex;gap:12px;margin-bottom:12px}
+.option-btn{flex:1;padding:16px;border-radius:var(--radius);background:var(--bg-surface);border:2px solid var(--border-accent);text-align:center;font-size:20px;font-weight:700;font-family:inherit;color:var(--text);cursor:pointer;transition:all .2s}
+.option-btn.correct{border-color:var(--green);background:var(--green-dim);color:var(--green)}
+.option-btn.wrong{border-color:var(--red);background:var(--red-dim);color:var(--red)}
+.option-btn.dim{opacity:.4}
+.option-btn.highlight{border-color:var(--gold)}
+
+/* Image placeholder */
+.img-placeholder{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);width:100%;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--text-muted);font-size:12px;margin-bottom:12px}
+.img-placeholder svg{width:36px;height:36px;opacity:.4}
+
+/* Countdown */
+.countdown-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.countdown-num{font-size:72px;font-weight:800;color:var(--gold);text-shadow:0 0 40px var(--gold-glow)}
+.countdown-ring{width:120px;height:120px;position:relative;margin-bottom:16px}
+.countdown-ring svg{width:100%;height:100%}
+.ring-bg{fill:none;stroke:var(--bg-surface);stroke-width:6}
+.ring-fill{fill:none;stroke:var(--gold);stroke-width:6;stroke-linecap:round}
+
+/* Intro screen */
+.intro-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.intro-title{font-size:22px;font-weight:800;margin-bottom:4px}
+.intro-sub{font-size:13px;color:var(--text-sec);margin-bottom:20px}
+.intro-icon{width:60px;height:60px;background:var(--bg-surface);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px}
+.intro-icon svg{width:24px;height:24px;color:var(--gold)}
+.intro-meta{font-size:12px;color:var(--text-muted);margin-bottom:16px}
+.rules-box{text-align:left;width:100%;margin-bottom:16px}
+.rules-title{font-size:12px;font-weight:700;margin-bottom:8px}
+.rule-item{display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:12px;color:var(--text-sec)}
+.rule-dot{width:6px;height:6px;border-radius:50%;background:var(--purple);flex-shrink:0;margin-top:5px}
+
+/* Results */
+.results-center{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px;overflow-y:auto}
+.result-ring-wrap{position:relative;margin-bottom:4px}
+.result-ring{width:140px;height:140px}
+.result-ring .bg{fill:none;stroke:var(--bg-surface);stroke-width:8}
+.result-ring .fill{fill:none;stroke-width:8;stroke-linecap:round;stroke:var(--gold);filter:drop-shadow(0 0 8px var(--gold-glow))}
+.result-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.result-num .val{font-size:40px;font-weight:800;background:linear-gradient(135deg,var(--gold),#F5D78E);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.result-num .unit{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px}
+.result-band{font-size:16px;font-weight:700;color:var(--green);margin-bottom:12px}
+.dim-pills{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px}
+.dim-pill{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 12px;text-align:center;min-width:90px}
+.dim-pill-name{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.dim-pill-score{font-size:18px;font-weight:800}
+.clarity-bar{display:flex;align-items:center;gap:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;width:100%}
+.clarity-label{font-size:10px;color:var(--text-muted);text-transform:uppercase}
+.clarity-val{font-size:16px;font-weight:800}
+.clarity-desc{font-size:10px;color:var(--text-sec);flex:1}
+
+/* Spinner */
+.spinner{width:60px;height:60px;border:4px solid var(--bg-surface);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Feedback text */
+.feedback{font-size:14px;font-weight:700;margin-bottom:8px;text-align:center}
+.feedback.correct{color:var(--green)}
+.feedback.wrong{color:var(--red)}
+
+/* Prep section */
+.prep{text-align:center}
+.prep-icon{color:var(--gold);margin-bottom:6px}
+.prep-icon svg{width:20px;height:20px}
+.prep-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.prep-desc{font-size:11px;color:var(--text-sec);line-height:1.5;margin-bottom:12px}
+
+/* Transition screen */
+.transition-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px}
+.transition-center .dots{display:flex;gap:6px}
+.transition-center .dots span{width:8px;height:8px;border-radius:50%;background:var(--gold);opacity:.3;animation:dotPulse 1.2s infinite}
+.transition-center .dots span:nth-child(2){animation-delay:.2s}
+.transition-center .dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{0%,100%{opacity:.3}50%{opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="gallery-header">
+  <h1>AZE Pronunciation Focus — All Test Screens</h1>
+  <p>Complete screen-by-screen reference for the pronunciation assessment flow</p>
+</div>
+
+<div class="toc">
+  <a href="#intro">Intro</a>
+  <a href="#task1">Task 1 — Words</a>
+  <a href="#task2">Task 2 — Sentences</a>
+  <a href="#task3">Task 3 — Listen & Repeat</a>
+  <a href="#task4">Task 4 — Free Production</a>
+  <a href="#results">Results</a>
+</div>
+
+<\!-- ═══ SVG DEFS (reusable icons) ═══ -->
+<svg style="display:none">
+  <symbol id="ic-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="21" x2="12" y2="17"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></symbol>
+  <symbol id="ic-ear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8.5a6.5 6.5 0 1113 0c0 3-2 4.5-3 6.5s-1 4-1 4"/><path d="M6 15c1-1 2-2 2-4"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="ic-img" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+  <symbol id="ic-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><path d="M15.54 8.46a5 5 0 010 7.07"/></symbol>
+</svg>
+
+<\!-- ═══════════ INTRO ═══════════ -->
+<div class="section-header" id="intro"><h2><span class="dot"></span>Welcome Screen</h2><p>Entry point for the assessment</p></div>
+<div class="screen-grid">
+<div class="card-wrap">
+  <div class="card-label">Screen 0 — Welcome</div>
+  <div class="phone">
+    <div class="intro-center">
+      <div class="intro-title">Pronunciation Focus</div>
+      <div class="intro-sub">You are about to begin the pronunciation assessment</div>
+      <div class="intro-icon"><svg style="width:24px;height:24px;color:var(--gold)"><use href="#ic-mic"/></svg></div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:2px">4 Tasks</div>
+      <div class="intro-meta">Approximately 5 minutes</div>
+      <div class="rules-box">
+        <div class="rules-title">Before you start:</div>
+        <div class="rule-item"><span class="rule-dot"></span>Speak clearly into your microphone</div>
+        <div class="rule-item"><span class="rule-dot"></span>Find a quiet space with minimal background noise</div>
+        <div class="rule-item"><span class="rule-dot"></span>Complete all sections without pausing</div>
+      </div>
+      <button class="cta cta-gold" style="width:100%">Begin Assessment →</button>
+    </div>
+  </div>
+  <div class="card-desc">Entry screen. Sets expectations and checks readiness.</div>
+</div>
+</div>
+
+<\!-- ═══════════ TASK 1 ═══════════ -->
+<div class="section-header" id="task1"><h2><span class="dot"></span>Task 1 — Read Aloud (Words)</h2><p>System-led pacing • Countdown → word appears → auto-advance • 15–18 words</p></div>
+<div class="screen-grid">
+
+<\!-- 1a: Instruction -->
+<div class="card-wrap">
+  <div class="card-label">Task 1 — Screen 1: Instruction</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog">
+        <div class="prog-dot active"></div><div class="prog-line active"></div>
+        <div class="prog-dot"></div><div class="prog-line"></div>
+        <div class="prog-dot"></div><div class="prog-line"></div>
+        <div class="prog-dot"></div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="content-left">
+        <div class="task-type"><span class="dot"></span>READ ALOUD — WORD LEVEL</div>
+        <div class="q-badge"><svg style="width:12px;height:12px"><use href="#ic-mic"/></svg> Q1 Read Aloud</div>
+        <div class="prompt">Say each word clearly</div>
+        <div class="instruction">You will see a word on the screen. Say the word clearly. We'll record and analyse your pronunciation.</div>
+        <div class="instruction" style="margin-top:auto;font-size:11px;color:var(--text-muted)">15–18 words • ~2 minutes</div>
+      </div>
+      <div class="content-right">
+        <div class="prep">
+          <div class="prep-icon"><svg><use href="#ic-ear"/></svg></div>
+          <div class="prep-title">Get Ready</div>
+          <div class="prep-desc">Words will appear one at a time. Say each word as soon as it appears.</div>
+          <button class="cta cta-gold">Start →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Task introduction with instructions and start button</div>
+</div>
+
+<\!-- 1b: Practice -->
+<div class="card-wrap">
+  <div class="card-label">Task 1 — Screen 2: Practice Word</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span style="color:var(--cyan);font-weight:600">PRACTICE</span><span>•</span><span>This word won't be scored</span></div>
+    <div class="content">
+      <div class="content-left">
+        <div class="word-big">
+          <div class="word">hello</div>
+          <div class="phonetic">/həˈloʊ/</div>
+        </div>
+      </div>
+      <div class="content-right">
+        <div class="rec-badge"><span class="rec-dot"></span>RECORDING</div>
+        <div class="rec-time">0:02</div>
+        <div class="visualizer">
+          <div class="viz-bar" style="--h:8px;animation-delay:0s"></div>
+          <div class="viz-bar" style="--h:18px;animation-delay:.1s"></div>
+          <div class="viz-bar" style="--h:12px;animation-delay:.2s"></div>
+          <div class="viz-bar" style="--h:24px;animation-delay:.15s"></div>
+          <div class="viz-bar" style="--h:10px;animation-delay:.25s"></div>
+          <div class="viz-bar" style="--h:20px;animation-delay:.05s"></div>
+          <div class="viz-bar" style="--h:14px;animation-delay:.3s"></div>
+          <div class="viz-bar" style="--h:22px;animation-delay:.12s"></div>
+        </div>
+        <div class="speak-hint">Practice — not scored</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">1–2 unscored practice words to check mic and reduce anxiety</div>
+</div>
+
+<\!-- 1c: Countdown -->
+<div class="card-wrap">
+  <div class="card-label">Task 1 — Screen 3: Countdown</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="content" style="align-items:center;justify-content:center">
+      <div class="countdown-center">
+        <div class="countdown-ring">
+          <svg viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="ring-fill" cx="60" cy="60" r="52" stroke-dasharray="327" stroke-dashoffset="109" transform="rotate(-90 60 60)"/>
+          </svg>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
+            <div class="countdown-num">3</div>
+          </div>
+        </div>
+        <div style="color:var(--text-sec);font-size:14px">Word appearing soon…</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">3-2-1 countdown before each word. No word visible yet.</div>
+</div>
+
+<\!-- 1d: Word + Recording -->
+<div class="card-wrap">
+  <div class="card-label">Task 1 — Screen 4: Word Display + Recording</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">⏱</span><span style="font-weight:600;color:var(--text)">Word 3 of 16</span></div>
+    <div class="content">
+      <div class="content-left">
+        <div class="word-big">
+          <div class="word">ship</div>
+          <div class="phonetic">/ʃɪp/</div>
+        </div>
+      </div>
+      <div class="content-right">
+        <div class="rec-badge"><span class="rec-dot"></span>RECORDING</div>
+        <div class="rec-time">0:02</div>
+        <div class="visualizer">
+          <div class="viz-bar" style="--h:10px;animation-delay:0s"></div>
+          <div class="viz-bar" style="--h:22px;animation-delay:.1s"></div>
+          <div class="viz-bar" style="--h:16px;animation-delay:.2s"></div>
+          <div class="viz-bar" style="--h:26px;animation-delay:.15s"></div>
+          <div class="viz-bar" style="--h:12px;animation-delay:.25s"></div>
+          <div class="viz-bar" style="--h:20px;animation-delay:.05s"></div>
+          <div class="viz-bar" style="--h:18px;animation-delay:.3s"></div>
+          <div class="viz-bar" style="--h:24px;animation-delay:.12s"></div>
+        </div>
+        <div class="speak-hint">Speak now</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Word appears, mic is live, auto-advances after timer</div>
+</div>
+
+<\!-- 1e: Auto-advance -->
+<div class="card-wrap">
+  <div class="card-label">Task 1 — Screen 5: Auto-Advance</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="content" style="align-items:center;justify-content:center">
+      <div class="transition-center">
+        <div style="color:var(--text-sec);font-size:16px;font-weight:600">Next word…</div>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Brief transition (~500ms) between words</div>
+</div>
+
+</div>
+
+<\!-- ═══════════ TASK 2 ═══════════ -->
+<div class="section-header" id="task2"><h2><span class="dot"></span>Task 2 — Read Aloud (Sentences)</h2><p>User-led pacing • Pre-record confirmation gate • 4–6 sentences</p></div>
+<div class="screen-grid">
+
+<\!-- 2a: Instruction -->
+<div class="card-wrap">
+  <div class="card-label">Task 2 — Screen 1: Instruction</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="content">
+      <div class="content-left">
+        <div class="task-type"><span class="dot"></span>READ ALOUD — SENTENCE LEVEL</div>
+        <div class="q-badge"><svg style="width:12px;height:12px"><use href="#ic-mic"/></svg> Q2 Read Aloud</div>
+        <div class="prompt">Read each sentence clearly</div>
+        <div class="instruction">You will read full sentences aloud. Take a moment to read each sentence first, then tap Start Recording when you're ready.</div>
+        <div class="instruction" style="margin-top:auto;font-size:11px;color:var(--text-muted)">5 sentences • User-paced</div>
+      </div>
+      <div class="content-right">
+        <div class="prep">
+          <div class="prep-icon"><svg><use href="#ic-ear"/></svg></div>
+          <div class="prep-title">Your Pace</div>
+          <div class="prep-desc">Read the sentence silently first, then record when ready.</div>
+          <button class="cta cta-gold">Start →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Task 2 introduction — user-led pacing explained</div>
+</div>
+
+<\!-- 2b: Sentence pre-record -->
+<div class="card-wrap">
+  <div class="card-label">Task 2 — Screen 2: Pre-Record Gate</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">⏱</span><span style="font-weight:600;color:var(--text)">Sentence 1 of 5</span></div>
+    <div class="content">
+      <div class="content-left">
+        <div class="sentence-box">She asked him to turn off the light before leaving.</div>
+        <div class="instruction">Read the sentence silently, then tap when ready.</div>
+      </div>
+      <div class="content-right">
+        <div class="prep">
+          <div class="prep-title" style="font-size:12px">Ready?</div>
+          <div class="prep-desc">Take your time to read the sentence first.</div>
+          <button class="cta cta-gold" style="font-size:11px;padding:8px 14px">Ready to Record</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Pre-record confirmation gate — prevents accidental recording</div>
+</div>
+
+<\!-- 2c: Recording -->
+<div class="card-wrap">
+  <div class="card-label">Task 2 — Screen 3: Recording</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div><div class="prog-line"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">⏱</span><span style="font-weight:600;color:var(--text)">Sentence 1 of 5</span><span style="margin-left:auto;color:var(--green)">max 10s</span></div>
+    <div class="content">
+      <div class="content-left">
+        <div class="sentence-box" style="border-color:rgba(46,204,139,0.3)">She asked him to turn off the light before leaving.</div>
+        <div class="instruction" style="color:var(--green)">Read the sentence aloud now</div>
+      </div>
+      <div class="content-right">
+        <div class="rec-badge"><span class="rec-dot"></span>RECORDING</div>
+        <div class="rec-time">0:04</div>
+        <div class="visualizer">
+          <div class="viz-bar" style="--h:12px;animation-delay:0s"></div>
+          <div class="viz-bar" style="--h:20px;animation-delay:.1s"></div>
+          <div class="viz-bar" style="--h:8px;animation-delay:.2s"></div>
+          <div class="viz-bar" style="--h:24px;animation-delay:.15s"></div>
+          <div class="viz-bar" style="--h:16px;animation-delay:.25s"></div>
+          <div class="viz-bar" style="--h:22px;animation-delay:.05s"></div>
+          <div class="viz-bar" style="--h:10px;animation-delay:.3s"></div>
+          <div class="viz-bar" style="--h:18px;animation-delay:.12s"></div>
+        </div>
+        <div class="stop-btn"><div class="inner"></div></div>
+        <div class="speak-hint">Tap to stop</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Active recording — sentence stays visible, stop button available</div>
+</div>
+
+</div>
+
+<\!-- ═══════════ TASK 3 ═══════════ -->
+<div class="section-header" id="task3"><h2><span class="dot"></span>Task 3 — Listen, Identify and Repeat</h2><p>Two rounds per item • Perception + Production • 8 minimal pairs</p></div>
+<div class="screen-grid">
+
+<\!-- 3a: Instruction -->
+<div class="card-wrap">
+  <div class="card-label">Task 3 — Screen 1: Instruction</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="content">
+      <div class="content-left">
+        <div class="task-type"><span class="dot"></span>LISTEN, IDENTIFY AND REPEAT</div>
+        <div class="q-badge"><svg style="width:12px;height:12px"><use href="#ic-vol"/></svg> Q3 Listen & Repeat</div>
+        <div class="prompt">Listen, choose, then repeat</div>
+        <div class="instruction">You will hear a sentence. Listen carefully to the key word, then choose the word you heard. You will then repeat the sentence.</div>
+        <div class="instruction" style="margin-top:auto;font-size:11px;color:var(--text-muted)">8 pairs • ~2–3 minutes</div>
+      </div>
+      <div class="content-right">
+        <div class="prep">
+          <div class="prep-icon"><svg><use href="#ic-ear"/></svg></div>
+          <div class="prep-title">Listen Up</div>
+          <div class="prep-desc">Focus on the key word in each sentence.</div>
+          <button class="cta cta-gold">Start →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Task 3 introduction — explains the two-round structure</div>
+</div>
+
+<\!-- 3b: Round 1 — Listening -->
+<div class="card-wrap">
+  <div class="card-label">Task 3 — Screen 2: Round 1 — Listening</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">👂</span><span style="font-weight:600;color:var(--text)">Pair 1 of 8</span><span style="color:var(--purple)">Round 1 — Listen</span></div>
+    <div class="content" style="flex-direction:column;padding:20px">
+      <div class="audio-player">
+        <button class="play-btn"><svg><use href="#ic-play"/></svg></button>
+        <div class="wave-bars">
+          <div class="wave-bar on" style="height:8px"></div><div class="wave-bar on" style="height:16px"></div>
+          <div class="wave-bar on" style="height:12px"></div><div class="wave-bar on" style="height:20px"></div>
+          <div class="wave-bar" style="height:14px"></div><div class="wave-bar" style="height:10px"></div>
+          <div class="wave-bar" style="height:18px"></div><div class="wave-bar" style="height:8px"></div>
+          <div class="wave-bar" style="height:14px"></div><div class="wave-bar" style="height:22px"></div>
+          <div class="wave-bar" style="height:10px"></div><div class="wave-bar" style="height:16px"></div>
+        </div>
+        <div class="audio-time">0:02 / 0:04</div>
+      </div>
+      <div class="instruction" style="text-align:center">Listen carefully to the sentence…</div>
+      <div style="flex:1"></div>
+      <div class="instruction" style="text-align:center;font-size:12px;color:var(--text-muted)">Which word did you hear?</div>
+      <div class="option-row">
+        <div class="option-btn" style="opacity:.5">ship</div>
+        <div class="option-btn" style="opacity:.5">sheep</div>
+      </div>
+      <div style="text-align:center"><button class="cta cta-outline" style="font-size:11px;padding:6px 14px">🔄 Replay</button></div>
+    </div>
+  </div>
+  <div class="card-desc">Audio plays automatically. Options dimmed until audio finishes.</div>
+</div>
+
+<\!-- 3c: Round 1 — Choose -->
+<div class="card-wrap">
+  <div class="card-label">Task 3 — Screen 3: Round 1 — Choose</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">👂</span><span style="font-weight:600;color:var(--text)">Pair 1 of 8</span><span style="color:var(--purple)">Round 1 — Choose</span></div>
+    <div class="content" style="flex-direction:column;padding:20px">
+      <div class="audio-player" style="opacity:.5">
+        <button class="play-btn"><svg><use href="#ic-play"/></svg></button>
+        <div class="wave-bars">
+          <div class="wave-bar on" style="height:8px"></div><div class="wave-bar on" style="height:16px"></div>
+          <div class="wave-bar on" style="height:12px"></div><div class="wave-bar on" style="height:20px"></div>
+          <div class="wave-bar on" style="height:14px"></div><div class="wave-bar on" style="height:10px"></div>
+          <div class="wave-bar on" style="height:18px"></div><div class="wave-bar on" style="height:8px"></div>
+        </div>
+        <div class="audio-time">0:04 / 0:04</div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="instruction" style="text-align:center;font-weight:600;color:var(--gold)">Tap the word you heard</div>
+      <div class="option-row">
+        <div class="option-btn highlight">ship</div>
+        <div class="option-btn highlight">sheep</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Options now active. Student taps their answer. No changes after tap.</div>
+</div>
+
+<\!-- 3d: Feedback correct -->
+<div class="card-wrap">
+  <div class="card-label">Task 3 — Screen 4: Feedback — Correct</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">✓</span><span style="font-weight:600;color:var(--text)">Pair 1 of 8</span><span style="color:var(--green)">Correct\!</span></div>
+    <div class="content" style="flex-direction:column;padding:20px;align-items:center;justify-content:center">
+      <div class="feedback correct">✓ Correct\!</div>
+      <div class="option-row" style="width:100%">
+        <div class="option-btn correct">ship ✓</div>
+        <div class="option-btn dim">sheep</div>
+      </div>
+      <div style="margin-top:16px;font-size:12px;color:var(--text-muted)">Moving to Round 2…</div>
+    </div>
+  </div>
+  <div class="card-desc">Green flash on correct answer. Brief pause then Round 2.</div>
+</div>
+
+<\!-- 3e: Feedback incorrect -->
+<div class="card-wrap">
+  <div class="card-label">Task 3 — Screen 5: Feedback — Incorrect</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">✗</span><span style="font-weight:600;color:var(--text)">Pair 1 of 8</span><span style="color:var(--red)">Not quite</span></div>
+    <div class="content" style="flex-direction:column;padding:20px;align-items:center;justify-content:center">
+      <div class="feedback wrong">The word was: ship</div>
+      <div class="option-row" style="width:100%">
+        <div class="option-btn correct">ship ✓</div>
+        <div class="option-btn wrong">sheep ✗</div>
+      </div>
+      <div style="margin-top:16px;font-size:12px;color:var(--text-muted)">Moving to Round 2…</div>
+    </div>
+  </div>
+  <div class="card-desc">Red flash on wrong answer. Correct answer revealed. Still proceeds.</div>
+</div>
+
+<\!-- 3f: Round 2 pre-record -->
+<div class="card-wrap">
+  <div class="card-label">Task 3 — Screen 6: Round 2 — Listen & Repeat</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">🎤</span><span style="font-weight:600;color:var(--text)">Pair 1 of 8</span><span style="color:var(--cyan)">Round 2 — Repeat</span></div>
+    <div class="content" style="flex-direction:column;padding:20px">
+      <div class="instruction" style="font-weight:600;color:var(--gold);text-align:center">Now repeat the full sentence clearly</div>
+      <div class="audio-player" style="margin-top:12px">
+        <button class="play-btn"><svg><use href="#ic-play"/></svg></button>
+        <div class="wave-bars">
+          <div class="wave-bar on" style="height:10px"></div><div class="wave-bar on" style="height:18px"></div>
+          <div class="wave-bar on" style="height:14px"></div><div class="wave-bar on" style="height:22px"></div>
+          <div class="wave-bar on" style="height:12px"></div><div class="wave-bar on" style="height:16px"></div>
+        </div>
+        <div class="audio-time">0:04</div>
+      </div>
+      <div class="sentence-box" style="margin-top:12px;font-size:14px;text-align:center;background:var(--bg-elevated)">"The <strong style="color:var(--gold)">ship</strong> left the harbour at noon."</div>
+      <div style="flex:1"></div>
+      <div style="text-align:center"><button class="cta cta-gold">Start Recording</button></div>
+    </div>
+  </div>
+  <div class="card-desc">Sentence plays again. Target word highlighted. Student records.</div>
+</div>
+
+<\!-- 3g: Round 2 recording -->
+<div class="card-wrap">
+  <div class="card-label">Task 3 — Screen 7: Round 2 — Recording</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div><div class="prog-line active"></div><div class="prog-dot"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">🎤</span><span style="font-weight:600;color:var(--text)">Pair 1 of 8</span><span style="color:var(--green)">Recording…</span><span style="margin-left:auto">max 8s</span></div>
+    <div class="content" style="flex-direction:column;padding:20px">
+      <div class="sentence-box" style="font-size:14px;text-align:center;border-color:rgba(46,204,139,0.3)">"The <strong style="color:var(--gold)">ship</strong> left the harbour at noon."</div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <div class="rec-badge"><span class="rec-dot"></span>RECORDING</div>
+        <div class="rec-time">0:03</div>
+        <div class="visualizer">
+          <div class="viz-bar" style="--h:10px;animation-delay:0s"></div>
+          <div class="viz-bar" style="--h:20px;animation-delay:.1s"></div>
+          <div class="viz-bar" style="--h:14px;animation-delay:.2s"></div>
+          <div class="viz-bar" style="--h:24px;animation-delay:.15s"></div>
+          <div class="viz-bar" style="--h:8px;animation-delay:.25s"></div>
+          <div class="viz-bar" style="--h:18px;animation-delay:.05s"></div>
+          <div class="viz-bar" style="--h:12px;animation-delay:.3s"></div>
+          <div class="viz-bar" style="--h:22px;animation-delay:.12s"></div>
+        </div>
+        <div class="stop-btn"><div class="inner"></div></div>
+        <div class="speak-hint">Repeat the sentence</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Student repeats the sentence. SpeechAce scores target phoneme.</div>
+</div>
+
+</div>
+
+<\!-- ═══════════ TASK 4 ═══════════ -->
+<div class="section-header" id="task4"><h2><span class="dot"></span>Task 4 — Free Production (Mixed Prompt Block)</h2><p>User-led • 2 questions + 1 image description • ASR reference text</p></div>
+<div class="screen-grid">
+
+<\!-- 4a: Instruction -->
+<div class="card-wrap">
+  <div class="card-label">Task 4 — Screen 1: Instruction</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div></div>
+    </div>
+    <div class="content">
+      <div class="content-left">
+        <div class="task-type"><span class="dot"></span>FREE PRODUCTION</div>
+        <div class="q-badge"><svg style="width:12px;height:12px"><use href="#ic-mic"/></svg> Q4 Speak Freely</div>
+        <div class="prompt">Answer questions and describe an image</div>
+        <div class="instruction">You will answer a few short questions and describe an image. Speak clearly in full sentences. We'll analyse your pronunciation.</div>
+        <div class="instruction" style="margin-top:auto;font-size:11px;color:var(--text-muted)">3 prompts • ~1 minute</div>
+      </div>
+      <div class="content-right">
+        <div class="prep">
+          <div class="prep-icon"><svg><use href="#ic-mic"/></svg></div>
+          <div class="prep-title">Your Words</div>
+          <div class="prep-desc">Speak naturally in full sentences. No right or wrong answer.</div>
+          <button class="cta cta-gold">Start →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Task 4 introduction — free production explained</div>
+</div>
+
+<\!-- 4b: Prompt 1 pre-record -->
+<div class="card-wrap">
+  <div class="card-label">Task 4 — Screen 2: Question 1 (Pre-Record)</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">💬</span><span style="font-weight:600;color:var(--text)">Prompt 1 of 3</span><span style="color:var(--purple)">Question</span></div>
+    <div class="content">
+      <div class="content-left">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+          <div class="prompt" style="font-size:20px;line-height:1.6">What did you do yesterday?</div>
+          <div class="instruction">Think about your answer, then tap to start recording.</div>
+        </div>
+      </div>
+      <div class="content-right">
+        <div class="prep">
+          <div class="prep-desc">Speak in full sentences. Max 20 seconds.</div>
+          <button class="cta cta-gold" style="font-size:11px;padding:8px 14px">Start Recording</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Personal experience question. Learner records when ready.</div>
+</div>
+
+<\!-- 4c: Prompt 1 recording -->
+<div class="card-wrap">
+  <div class="card-label">Task 4 — Screen 3: Question 1 (Recording)</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">💬</span><span style="font-weight:600;color:var(--text)">Prompt 1 of 3</span><span style="color:var(--green)">Recording…</span><span style="margin-left:auto">max 20s</span></div>
+    <div class="content">
+      <div class="content-left">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+          <div class="prompt" style="font-size:20px;color:var(--text-sec)">What did you do yesterday?</div>
+        </div>
+      </div>
+      <div class="content-right">
+        <div class="rec-badge"><span class="rec-dot"></span>RECORDING</div>
+        <div class="rec-time">0:06</div>
+        <div class="visualizer">
+          <div class="viz-bar" style="--h:12px;animation-delay:0s"></div>
+          <div class="viz-bar" style="--h:22px;animation-delay:.1s"></div>
+          <div class="viz-bar" style="--h:16px;animation-delay:.2s"></div>
+          <div class="viz-bar" style="--h:26px;animation-delay:.15s"></div>
+          <div class="viz-bar" style="--h:10px;animation-delay:.25s"></div>
+          <div class="viz-bar" style="--h:20px;animation-delay:.05s"></div>
+        </div>
+        <div class="stop-btn"><div class="inner"></div></div>
+        <div class="speak-hint">Tap to stop</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Active recording — question remains visible</div>
+</div>
+
+<\!-- 4d: Prompt 2 -->
+<div class="card-wrap">
+  <div class="card-label">Task 4 — Screen 4: Question 2 (Pre-Record)</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">💬</span><span style="font-weight:600;color:var(--text)">Prompt 2 of 3</span><span style="color:var(--purple)">Opinion</span></div>
+    <div class="content">
+      <div class="content-left">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+          <div class="prompt" style="font-size:20px;line-height:1.6">Do you prefer studying in the morning or evening? Why?</div>
+          <div class="instruction">Think about your answer, then tap to start recording.</div>
+        </div>
+      </div>
+      <div class="content-right">
+        <div class="prep">
+          <div class="prep-desc">Give a reason for your choice. Max 20 seconds.</div>
+          <button class="cta cta-gold" style="font-size:11px;padding:8px 14px">Start Recording</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Preference + reason question. Different type from Prompt 1.</div>
+</div>
+
+<\!-- 4e: Prompt 3 image pre-record -->
+<div class="card-wrap">
+  <div class="card-label">Task 4 — Screen 5: Image Description (Pre-Record)</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">🖼</span><span style="font-weight:600;color:var(--text)">Prompt 3 of 3</span><span style="color:var(--purple)">Image</span></div>
+    <div class="content" style="flex-direction:column;padding:20px">
+      <div class="img-placeholder">
+        <svg><use href="#ic-img"/></svg>
+        <span>People sitting in a park</span>
+      </div>
+      <div class="prompt" style="font-size:16px">Describe what you can see in this picture.</div>
+      <div class="instruction">Look at the image, then tap to start recording.</div>
+      <div style="flex:1"></div>
+      <div style="text-align:center"><button class="cta cta-gold">Start Recording</button></div>
+    </div>
+  </div>
+  <div class="card-desc">Image shown with description prompt. Elicits varied vocabulary.</div>
+</div>
+
+<\!-- 4f: Image recording -->
+<div class="card-wrap">
+  <div class="card-label">Task 4 — Screen 6: Image Description (Recording)</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot active"></div></div>
+    </div>
+    <div class="timer-row"><span class="clock">🖼</span><span style="font-weight:600;color:var(--text)">Prompt 3 of 3</span><span style="color:var(--green)">Recording…</span><span style="margin-left:auto">max 20s</span></div>
+    <div class="content" style="flex-direction:column;padding:20px">
+      <div class="img-placeholder" style="aspect-ratio:16/8;border-color:rgba(46,204,139,0.3)">
+        <svg><use href="#ic-img"/></svg>
+        <span>People sitting in a park</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:8px">
+        <div class="rec-badge"><span class="rec-dot"></span>RECORDING</div>
+        <div class="rec-time">0:08</div>
+        <div class="visualizer">
+          <div class="viz-bar" style="--h:14px;animation-delay:0s"></div>
+          <div class="viz-bar" style="--h:22px;animation-delay:.1s"></div>
+          <div class="viz-bar" style="--h:10px;animation-delay:.2s"></div>
+          <div class="viz-bar" style="--h:26px;animation-delay:.15s"></div>
+          <div class="viz-bar" style="--h:16px;animation-delay:.25s"></div>
+          <div class="viz-bar" style="--h:20px;animation-delay:.05s"></div>
+        </div>
+        <div class="stop-btn"><div class="inner"></div></div>
+        <div class="speak-hint">Describe the picture</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Image stays visible during recording. Auto-stop at max time.</div>
+</div>
+
+</div>
+
+<\!-- ═══════════ RESULTS ═══════════ -->
+<div class="section-header" id="results"><h2><span class="dot"></span>Results</h2><p>Score analysis and feedback screens</p></div>
+<div class="screen-grid">
+
+<\!-- R1: Analysing -->
+<div class="card-wrap">
+  <div class="card-label">Results — Screen 1: Analysing</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div></div>
+    </div>
+    <div class="content" style="align-items:center;justify-content:center">
+      <div style="text-align:center">
+        <div class="spinner"></div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:6px">Analysing your pronunciation…</div>
+        <div style="font-size:13px;color:var(--text-muted)">This will take a moment</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Processing screen while SpeechAce scores all recordings</div>
+</div>
+
+<\!-- R2: Results -->
+<div class="card-wrap">
+  <div class="card-label">Results — Screen 2: Score Summary</div>
+  <div class="phone">
+    <div class="topnav">
+      <div class="topnav-icon"><svg><use href="#ic-mic"/></svg> Pronunciation</div>
+      <div class="prog"><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div><div class="prog-line done"></div><div class="prog-dot done"></div></div>
+    </div>
+    <div class="results-center">
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px">Your Results</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Pronunciation Focus Assessment</div>
+      <div class="result-ring-wrap">
+        <svg class="result-ring" viewBox="0 0 140 140">
+          <circle class="bg" cx="70" cy="70" r="60"/>
+          <circle class="fill" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="90" transform="rotate(-90 70 70)"/>
+        </svg>
+        <div class="result-num">
+          <div class="val">76</div>
+          <div class="unit">overall</div>
+        </div>
+      </div>
+      <div class="result-band">Generally clear</div>
+      <div class="dim-pills">
+        <div class="dim-pill"><div class="dim-pill-name">Phoneme</div><div class="dim-pill-score" style="color:var(--green)">82</div></div>
+        <div class="dim-pill"><div class="dim-pill-name">Fluency</div><div class="dim-pill-score" style="color:var(--green)">78</div></div>
+        <div class="dim-pill"><div class="dim-pill-name">Stress</div><div class="dim-pill-score" style="color:var(--gold)">75</div></div>
+        <div class="dim-pill"><div class="dim-pill-name">Consistency</div><div class="dim-pill-score" style="color:var(--green)">80</div></div>
+        <div class="dim-pill"><div class="dim-pill-name">Connected</div><div class="dim-pill-score" style="color:var(--gold)">65</div></div>
+      </div>
+      <div class="clarity-bar">
+        <div><div class="clarity-label">Clarity</div><div class="clarity-val" style="color:var(--green)">89%</div></div>
+        <div class="clarity-desc">Good clarity — most speech is clearly produced</div>
+      </div>
+      <button class="cta cta-gold" style="margin-top:12px;width:100%">View Full Report →</button>
+    </div>
+  </div>
+  <div class="card-desc">V2 scoring: 5 dimensions + clarity indicator. Band label shown.</div>
+</div>
+
+</div>
+
+<div style="text-align:center;padding:48px 24px;color:var(--text-muted);font-size:13px">
+  AZE Pronunciation Focus — 24 screens total — April 2026
+</div>
+
+</body>
+</html>

@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Pronunciation Report</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f7fa;
+    color: #1f2937;
+    line-height: 1.5;
+    padding: 24px 16px;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+
+  /* Header / Overall */
+  .hero {
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 32px 24px;
+    text-align: center;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  }
+  .hero .label { font-size: 14px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .hero .score { font-size: 64px; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+  .hero .band { font-size: 20px; font-weight: 500; margin-bottom: 16px; }
+  .hero .summary { font-size: 15px; opacity: 0.92; max-width: 480px; margin: 0 auto; line-height: 1.6; }
+
+  /* Cards */
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .card h2 {
+    font-size: 16px;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+  .card h3 { font-size: 18px; margin-bottom: 8px; color: #111827; }
+
+  /* Section scores */
+  .sections { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .section-tile {
+    padding: 16px;
+    border-radius: 10px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+  }
+  .section-tile .name { font-size: 13px; color: #6B7280; margin-bottom: 4px; }
+  .section-tile .score-num { font-size: 28px; font-weight: 700; }
+  .section-tile .desc { font-size: 12px; color: #9CA3AF; margin-top: 4px; }
+
+  /* Split scores (for Task 3) */
+  .split-scores {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .split-scores .col { text-align: left; }
+  .split-scores .lbl { font-size: 11px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.3px; }
+  .split-scores .val { font-size: 24px; font-weight: 700; line-height: 1.1; margin-top: 2px; }
+  .score-high { color: #10B981; }
+  .score-mid  { color: #F59E0B; }
+  .score-low  { color: #EF4444; }
+  .score-na   { color: #9CA3AF; }
+
+  /* Dimensions bars */
+  .dimension { margin-bottom: 14px; }
+  .dimension:last-child { margin-bottom: 0; }
+  .dim-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .dim-name { font-weight: 500; }
+  .dim-score { font-weight: 600; font-size: 18px; }
+  .dim-bar-bg { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+  .dim-bar { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .dim-bar.high { background: #10B981; }
+  .dim-bar.mid  { background: #F59E0B; }
+  .dim-bar.low  { background: #EF4444; }
+  .dim-note { font-size: 12px; color: #6B7280; margin-top: 4px; }
+
+  /* Strengths */
+  .word-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .word-chip {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* Focus area */
+  .focus-group {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+  .focus-group:first-child { border-top: none; padding-top: 0; margin-top: 8px; }
+  .focus-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .focus-phoneme {
+    font-size: 18px;
+    font-weight: 700;
+    color: #DC2626;
+  }
+  .focus-words {
+    font-size: 14px;
+    color: #6B7280;
+    margin-bottom: 8px;
+  }
+  .focus-tip {
+    background: #FEF3C7;
+    color: #92400E;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* Listening / discrimination */
+  .pair-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 14px;
+  }
+  .pair-row:last-child { border-bottom: none; }
+  .check { color: #10B981; font-weight: 700; }
+  .cross { color: #EF4444; font-weight: 700; }
+
+  /* Connected speech */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .compare-side {
+    text-align: center;
+    padding: 12px;
+    border-radius: 8px;
+    background: #f9fafb;
+  }
+  .compare-side .lbl { font-size: 12px; color: #6B7280; text-transform: uppercase; }
+  .compare-side .num { font-size: 28px; font-weight: 700; margin-top: 4px; }
+
+  /* Notes */
+  .note {
+    background: #eff6ff;
+    border-left: 3px solid #3B82F6;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #1E40AF;
+    border-radius: 4px;
+    margin-top: 12px;
+  }
+  .note-warn {
+    background: #FEF3C7;
+    border-left-color: #F59E0B;
+    color: #92400E;
+  }
+
+  /* Footer */
+  .footer { text-align: center; color: #9CA3AF; font-size: 12px; margin-top: 24px; }
+
+  /* Page tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: white;
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6B7280;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: #3B82F6;
+    color: white;
+  }
+  .tab:not(.active):hover { background: #f3f4f6; color: #374151; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Word stress breakdown */
+  .word-detail {
+    border-bottom: 1px solid #f3f4f6;
+    padding: 18px 0;
+  }
+  .word-detail:last-child { border-bottom: none; padding-bottom: 0; }
+  .word-detail:first-child { padding-top: 0; }
+  .word-detail-head {
+    margin-bottom: 4px;
+  }
+  .wd-word { font-size: 20px; font-weight: 600; color: #111827; }
+  .wd-ipa { font-size: 14px; color: #6B7280; margin-left: 8px; font-family: 'Times New Roman', serif; }
+  .wd-meta { font-size: 12px; color: #6B7280; margin-bottom: 10px; }
+
+  .syllable-bars {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    margin: 12px 0 6px;
+    height: 36px;
+  }
+  .syl-bar {
+    background: #DBEAFE;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #1E3A8A;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+  }
+  .syl-bar.stressed-expected {
+    background: #FCD34D;
+    color: #78350F;
+  }
+  .syl-bar.stressed-actual {
+    border: 2px solid #3B82F6;
+  }
+  .syl-bar.both { background: #10B981; color: white; }
+
+  .syl-durations {
+    display: flex;
+    gap: 2px;
+    font-size: 11px;
+    color: #6B7280;
+    margin-bottom: 8px;
+  }
+  .syl-dur { text-align: center; min-width: 0; }
+
+  .stress-verdict {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    font-weight: 500;
+  }
+  .verdict-ok { background: #D1FAE5; color: #065F46; }
+  .verdict-off { background: #FEE2E2; color: #991B1B; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #6B7280;
+    margin-bottom: 4px;
+    padding: 10px 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+  }
+  .legend-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  /* Info icon + modal */
+  .info-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    font-style: italic;
+    font-family: Georgia, serif;
+    cursor: pointer;
+    border: none;
+    margin-left: 8px;
+    transition: background 0.2s;
+    vertical-align: middle;
+  }
+  .info-btn:hover { background: rgba(255,255,255,0.4); }
+
+  .info-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #E5E7EB;
+    color: #6B7280;
+    font-size: 11px;
+    font-weight: 700;
+    font-style: italic;
+    font-family: Georgia, serif;
+    cursor: pointer;
+    border: none;
+    margin-left: 6px;
+    transition: background 0.2s;
+    vertical-align: middle;
+  }
+  .info-btn-sm:hover { background: #D1D5DB; color: #374151; }
+
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.6);
+    z-index: 100;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+    overflow-y: auto;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 14px;
+    max-width: 560px;
+    width: 100%;
+    padding: 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    color: #1f2937;
+    margin: auto;
+  }
+  .modal h3 { font-size: 20px; margin-bottom: 4px; color: #111827; }
+  .modal .sub { color: #6B7280; font-size: 13px; margin-bottom: 20px; }
+  .modal h4 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.4px; color: #6B7280; margin: 20px 0 8px; font-weight: 600; }
+  .modal h4:first-of-type { margin-top: 0; }
+  .modal p { font-size: 14px; line-height: 1.6; margin-bottom: 10px; color: #374151; }
+  .modal table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  .modal table th { text-align: left; padding: 8px 10px; background: #f3f4f6; font-weight: 600; color: #4B5563; }
+  .modal table td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; }
+  .modal table tr:last-child td { border-bottom: none; }
+  .modal .formula {
+    background: #f3f4f6;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #1F2937;
+    line-height: 1.6;
+    margin: 8px 0;
+  }
+  .modal-close {
+    background: #3B82F6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 20px;
+    width: 100%;
+  }
+  .modal-close:hover { background: #2563EB; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- HERO / OVERALL -->
+    <div class="hero">
+      <div class="label">
+        Your Pronunciation Score
+        <button class="info-btn" onclick="document.getElementById('howModal').classList.add('open')" title="How is this score calculated?">i</button>
+      </div>
+      <div class="score">85</div>
+      <div class="band">Clear and confident</div>
+      <p class="summary">
+        Your overall pronunciation is strong — listeners can follow you easily. Your sentence-level performance is excellent. A few individual sounds are worth a second look, especially the TH sound and some short vowels.
+      </p>
+    </div>
+
+    <!-- HOW IT WORKS MODAL -->
+    <div class="modal-backdrop" id="howModal" onclick="if(event.target===this)this.classList.remove('open')">
+      <div class="modal">
+        <h3>How your score is calculated</h3>
+        <p class="sub">Built on Microsoft Azure Speech AI · calibrated for English L2 learners</p>
+
+        <h4>The data source</h4>
+        <p>Every recording is sent to <strong>Azure Speech Services Pronunciation Assessment</strong> — the same speech AI used by Microsoft Reading Coach and a number of major language-learning platforms. It returns scores per individual sound, per syllable, and per sentence, plus pacing and intonation signals.</p>
+
+        <h4>The five dimensions</h4>
+        <table>
+          <thead><tr><th>Dimension</th><th>Weight</th><th>What it measures</th></tr></thead>
+          <tbody>
+            <tr><td>Phoneme accuracy</td><td>25%</td><td>Are the individual sounds correct?</td></tr>
+            <tr><td>Fluency</td><td>22%</td><td>Does speech flow at a natural pace, without unnatural pauses?</td></tr>
+            <tr><td>Word stress</td><td>18%</td><td>Is the right syllable emphasised in each word?</td></tr>
+            <tr><td>Consistency</td><td>18%</td><td>Is performance steady across items, or does it swing?</td></tr>
+            <tr><td>Sentence stability</td><td>17%</td><td>Does pronunciation hold up in sentences vs single words?</td></tr>
+          </tbody>
+        </table>
+
+        <h4>The formula</h4>
+        <div class="formula">
+          Score = (Phoneme × 0.25)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ (Fluency × 0.22)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ (Stress × 0.18)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ (Consistency × 0.18)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ (Stability × 0.17)
+        </div>
+
+        <h4>Score bands</h4>
+        <table>
+          <tbody>
+            <tr><td><strong>85–100</strong></td><td>Clear and confident</td></tr>
+            <tr><td><strong>70–84</strong></td><td>Generally clear, some patterns to refine</td></tr>
+            <tr><td><strong>55–69</strong></td><td>Comprehensible but inconsistent</td></tr>
+            <tr><td><strong>40–54</strong></td><td>Listener has to work to follow</td></tr>
+            <tr><td><strong>0–39</strong></td><td>Difficult for a listener to follow</td></tr>
+          </tbody>
+        </table>
+
+        <h4>Why a composite, not a single number?</h4>
+        <p>Two learners can both score 80 overall — one through consistently good performance, one through a mix of strong and weak items. Listeners experience these very differently. The five dimensions make that difference visible, and let learners see <em>where</em> to focus, not just <em>how well</em> they did.</p>
+
+        <button class="modal-close" onclick="document.getElementById('howModal').classList.remove('open')">Got it</button>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="showPage('summary')">Summary</button>
+      <button class="tab" onclick="showPage('detail')">Detailed analysis</button>
+    </div>
+
+    <!-- PAGE: SUMMARY -->
+    <div id="page-summary" class="page active">
+
+    <!-- PER-SECTION SCORES -->
+    <div class="card">
+      <h2>How you did in each part</h2>
+      <div class="sections">
+        <div class="section-tile">
+          <div class="name">Single words</div>
+          <div class="score-num score-mid">81</div>
+          <div class="desc">15 words read aloud</div>
+        </div>
+        <div class="section-tile">
+          <div class="name">Sentences</div>
+          <div class="score-num score-high">97</div>
+          <div class="desc">6 sentences and groups</div>
+        </div>
+        <div class="section-tile">
+          <div class="name">Minimal pairs</div>
+          <div class="split-scores">
+            <div class="col">
+              <div class="lbl">Heard</div>
+              <div class="val score-high">88</div>
+            </div>
+            <div class="col">
+              <div class="lbl">Said</div>
+              <div class="val score-high">98</div>
+            </div>
+          </div>
+          <div class="desc">7/8 right · 8 repeats scored</div>
+        </div>
+        <div class="section-tile">
+          <div class="name">Free speech</div>
+          <div class="score-num score-na">—</div>
+          <div class="desc">No data this session</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIMENSIONS -->
+    <div class="card">
+      <h2>The five things we measure</h2>
+
+      <div class="dimension">
+        <div class="dim-row">
+          <span class="dim-name">Phoneme accuracy <button class="info-btn-sm" onclick="showDim('phoneme')">i</button></span>
+          <span class="dim-score score-high">89</span>
+        </div>
+        <div class="dim-bar-bg"><div class="dim-bar high" style="width: 89%"></div></div>
+        <div class="dim-note">How clearly you produce individual sounds.</div>
+      </div>
+
+      <div class="dimension">
+        <div class="dim-row">
+          <span class="dim-name">Fluency <button class="info-btn-sm" onclick="showDim('fluency')">i</button></span>
+          <span class="dim-score score-high">94</span>
+        </div>
+        <div class="dim-bar-bg"><div class="dim-bar high" style="width: 94%"></div></div>
+        <div class="dim-note">How smoothly your speech flows — pace and pauses.</div>
+      </div>
+
+      <div class="dimension">
+        <div class="dim-row">
+          <span class="dim-name">Word stress <button class="info-btn-sm" onclick="showDim('stress')">i</button></span>
+          <span class="dim-score score-high">85</span>
+        </div>
+        <div class="dim-bar-bg"><div class="dim-bar high" style="width: 85%"></div></div>
+        <div class="dim-note">Whether you stress the right syllable in each word.</div>
+      </div>
+
+      <div class="dimension">
+        <div class="dim-row">
+          <span class="dim-name">Consistency <button class="info-btn-sm" onclick="showDim('consistency')">i</button></span>
+          <span class="dim-score score-low">54</span>
+        </div>
+        <div class="dim-bar-bg"><div class="dim-bar low" style="width: 54%"></div></div>
+        <div class="dim-note">How steady your performance was — your scores varied a lot between words.</div>
+      </div>
+
+      <div class="dimension">
+        <div class="dim-row">
+          <span class="dim-name">Sentence stability <button class="info-btn-sm" onclick="showDim('connected')">i</button></span>
+          <span class="dim-score score-high">100</span>
+        </div>
+        <div class="dim-bar-bg"><div class="dim-bar high" style="width: 100%"></div></div>
+        <div class="dim-note">Your sentence pronunciation is actually <strong>better</strong> than your isolated word pronunciation — a great sign.</div>
+      </div>
+    </div>
+
+    <!-- DIMENSION DETAIL MODAL -->
+    <div class="modal-backdrop" id="dimModal" onclick="if(event.target===this)this.classList.remove('open')">
+      <div class="modal">
+        <h3 id="dimModalTitle">—</h3>
+        <p class="sub" id="dimModalSub">—</p>
+        <h4>What it measures</h4>
+        <p id="dimWhat">—</p>
+        <h4>How it's calculated</h4>
+        <p id="dimHow">—</p>
+        <h4>Why it matters</h4>
+        <p id="dimWhy">—</p>
+        <button class="modal-close" onclick="document.getElementById('dimModal').classList.remove('open')">Got it</button>
+      </div>
+    </div>
+
+    <script>
+      const DIM_INFO = {
+        phoneme: {
+          title: "Phoneme accuracy",
+          sub: "Weighted 25% of the overall score",
+          what: "How accurately you produce each individual sound. A 'phoneme' is the smallest unit of sound in English — like /θ/ in 'think' or /ɪ/ in 'ship'. This is the most direct measure of pronunciation.",
+          how: "Azure Speech AI returns an accuracy score (0–100) for every phoneme in every word you say. We average those scores across the whole session.",
+          why: "Substituting one sound for another can change word meaning entirely or make the speaker hard to follow. Across a session, phoneme errors form a pattern that pinpoints exactly which sounds need work."
+        },
+        fluency: {
+          title: "Fluency",
+          sub: "Weighted 22% of the overall score",
+          what: "How natural and flowing your speech is — including pace, hesitation, and the length of uninterrupted speech. This is not about speed — it's about whether speech flows without excessive pausing.",
+          how: "We use Azure's fluency score directly. It's calculated from sentence recordings (Task 2 and Task 4) and incorporates pause data, pace, and run length.",
+          why: "Even accurate pronunciation becomes hard to follow if speech is heavily paused or broken into short chunks. Fluency reflects how the speech lands for a listener in real time."
+        },
+        stress: {
+          title: "Word stress",
+          sub: "Weighted 18% of the overall score",
+          what: "Whether you place stress on the correct syllable within each word — for example, PHO-to-graph rather than pho-TO-graph.",
+          how: "We compare the actual duration of each syllable in your recording against the expected stress pattern stored in our word bank. The stressed syllable should be the longest. We also use Azure's pitch-variation signal to confirm natural intonation.",
+          why: "Misplaced stress is one of the most common causes of miscommunication in English, even when individual sounds are correct. A listener may fail to recognise a word entirely if the stress is wrong."
+        },
+        consistency: {
+          title: "Consistency",
+          sub: "Weighted 18% of the overall score",
+          what: "How stable your pronunciation quality is across the session. Two learners can both score 80 overall — one through consistently good performance, one through a mix of strong and weak items.",
+          how: "We calculate the standard deviation of accuracy scores across all items in the session. A small spread = high consistency. A large spread = low consistency.",
+          why: "Listeners experience a steady speaker very differently to a speaker who swings between strong and weak. Consistency is particularly relevant for identifying learners who can produce sounds — but not yet reliably."
+        },
+        connected: {
+          title: "Sentence stability",
+          sub: "Weighted 17% of the overall score",
+          what: "Whether your pronunciation holds steady when words are combined into a full sentence, compared to your performance on single words. A high score means you don't lose accuracy under the cognitive load of a longer item.",
+          how: "We compare your average accuracy on isolated words (Task 1) with your average accuracy on sentences (Task 2). The gap is mapped to a score. If you perform equally well or better in sentences, this scores 100.",
+          why: "A learner can produce individual words clearly in isolation but struggle when those words are stacked into a sentence. This dimension surfaces that breakdown. (Note: a full Connected Speech measure — covering linking, weak forms, and reductions — is on our roadmap as a separate dimension.)"
+        }
+      };
+      function showDim(key) {
+        const d = DIM_INFO[key];
+        document.getElementById('dimModalTitle').textContent = d.title;
+        document.getElementById('dimModalSub').textContent = d.sub;
+        document.getElementById('dimWhat').textContent = d.what;
+        document.getElementById('dimHow').textContent = d.how;
+        document.getElementById('dimWhy').textContent = d.why;
+        document.getElementById('dimModal').classList.add('open');
+      }
+    </script>
+
+    <!-- STRENGTHS -->
+    <div class="card">
+      <h2>Words you pronounced clearly</h2>
+      <p style="color: #6B7280; font-size: 14px; margin-bottom: 8px;">
+        These words came out perfectly — every sound was clear.
+      </p>
+      <div class="word-chips">
+        <span class="word-chip">judge</span>
+        <span class="word-chip">dinner</span>
+        <span class="word-chip">forget</span>
+        <span class="word-chip">kitchen</span>
+        <span class="word-chip">pencil</span>
+      </div>
+    </div>
+
+    <!-- FOCUS AREAS -->
+    <div class="card">
+      <h2>What to work on</h2>
+
+      <div class="focus-group">
+        <div class="focus-header">
+          <span class="focus-phoneme">TH — as in "think"</span>
+          <span class="score-low" style="font-weight: 600;">low</span>
+        </div>
+        <div class="focus-words">In your session: <strong>bath</strong> (64)</div>
+        <div class="focus-tip">
+          <strong>Tip:</strong> Place the tip of your tongue lightly between your teeth and blow air through. No voice — just air.
+        </div>
+      </div>
+
+      <div class="focus-group">
+        <div class="focus-header">
+          <span class="focus-phoneme">UW — long "oo"</span>
+          <span class="score-low" style="font-weight: 600;">low</span>
+        </div>
+        <div class="focus-words">In your session: <strong>food</strong> (63)</div>
+        <div class="focus-tip">
+          <strong>Tip:</strong> Round your lips into a small circle. Hold the sound long, like "oo" in food.
+        </div>
+      </div>
+
+      <div class="focus-group">
+        <div class="focus-header">
+          <span class="focus-phoneme">Z — as in "zoo"</span>
+          <span class="score-low" style="font-weight: 600;">low</span>
+        </div>
+        <div class="focus-words">In your session: <strong>zoo</strong> (61)</div>
+        <div class="focus-tip">
+          <strong>Tip:</strong> Place your tongue near the ridge behind your top teeth and add your voice. The sound should buzz.
+        </div>
+      </div>
+
+      <div class="focus-group">
+        <div class="focus-header">
+          <span class="focus-phoneme">EH — as in "bet"</span>
+          <span class="score-mid" style="font-weight: 600;">mid</span>
+        </div>
+        <div class="focus-words">In your session: <strong>exercise</strong> (69)</div>
+        <div class="focus-tip">
+          <strong>Tip:</strong> Open your mouth a little, with your tongue in the middle. Short. Like "e" in red.
+        </div>
+      </div>
+
+      <div class="note note-warn">
+        Some of these low scores may be partly due to recording quality on short words — the audio system can lose detail at the edges of brief sounds. Worth listening to your recordings before assuming a real pronunciation issue.
+      </div>
+    </div>
+
+    <!-- LISTENING -->
+    <div class="card">
+      <h2>How well you heard the differences</h2>
+      <p style="color: #6B7280; font-size: 14px; margin-bottom: 12px;">
+        You got <strong>7 out of 8</strong> right when listening for similar sounds.
+      </p>
+      <div class="pair-row">
+        <span>L vs R (long / wrong)</span>
+        <span class="check">✓ correct</span>
+      </div>
+      <div class="pair-row">
+        <span>B vs V (boat / vote)</span>
+        <span class="check">✓ correct</span>
+      </div>
+      <div class="pair-row">
+        <span>TH vs S (path / pass)</span>
+        <span class="check">✓ correct</span>
+      </div>
+      <div class="pair-row">
+        <span>V vs W (vine / wine)</span>
+        <span class="check">✓ correct</span>
+      </div>
+      <div class="pair-row">
+        <span>DH vs D (lather / ladder)</span>
+        <span class="check">✓ correct</span>
+      </div>
+      <div class="pair-row">
+        <span>CH vs SH (chair / share)</span>
+        <span class="check">✓ correct</span>
+      </div>
+      <div class="pair-row">
+        <span>IH vs IY (bin / bean)</span>
+        <span class="check">✓ correct</span>
+      </div>
+      <div class="pair-row">
+        <span><strong>AE vs EH (pat / pet)</strong></span>
+        <span class="cross">✗ missed</span>
+      </div>
+      <div class="note">
+        Your only miss (AE vs EH) and your slightly weaker scores on similar vowels suggest the short "a" / short "e" contrast might be worth practising.
+      </div>
+    </div>
+
+    <!-- CONNECTED SPEECH -->
+    <div class="card">
+      <h2>Words vs sentences</h2>
+      <div class="compare">
+        <div class="compare-side">
+          <div class="lbl">Single words</div>
+          <div class="num score-mid">81</div>
+        </div>
+        <div class="compare-side">
+          <div class="lbl">In sentences</div>
+          <div class="num score-high">97</div>
+        </div>
+      </div>
+      <p style="font-size: 14px; color: #4B5563;">
+        Your sentence pronunciation is <strong>16 points higher</strong> than your single-word pronunciation. This is unusual — most learners drop in connected speech, not improve. It means your speech flows naturally when there's rhythm and context to lean on.
+      </p>
+    </div>
+
+    <!-- FREE PRODUCTION -->
+    <div class="card">
+      <h2>Free speech</h2>
+      <p style="font-size: 14px; color: #6B7280;">
+        We didn't get usable data from the free speech section in this session. Try again to add this part of the picture — it shows how your pronunciation holds up when you choose your own words.
+      </p>
+    </div>
+
+    <!-- SESSION DETAILS -->
+    <div class="card">
+      <h2>Session details</h2>
+      <div class="sections" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="section-tile">
+          <div class="name">Words spoken</div>
+          <div class="score-num" style="color: #1F2937;">137</div>
+          <div class="desc">across all 4 tasks</div>
+        </div>
+        <div class="section-tile">
+          <div class="name">Speaking time</div>
+          <div class="score-num" style="color: #1F2937;">3:30</div>
+          <div class="desc">total recorded</div>
+        </div>
+        <div class="section-tile">
+          <div class="name">Speech rate</div>
+          <div class="split-scores">
+            <div class="col">
+              <div class="lbl">Reading</div>
+              <div class="val" style="color: #1F2937;">59</div>
+            </div>
+            <div class="col">
+              <div class="lbl">Free</div>
+              <div class="val score-na">—</div>
+            </div>
+          </div>
+          <div class="desc">words per minute</div>
+        </div>
+        <div class="section-tile">
+          <div class="name">Hints used</div>
+          <div class="score-num" style="color: #1F2937;">0/15</div>
+          <div class="desc">in word task</div>
+        </div>
+      </div>
+      <div class="note" style="margin-top: 16px;">
+        <strong>Reading vs free speech:</strong> reading rate (59 wpm) covers Tasks 1, 2, and 3 — all script-based. Free speech rate (Task 4) is when you choose your own words and is the more useful diagnostic for fluency. Native English conversational pace is roughly 150–180 wpm; read-aloud and L2 free speech are naturally slower.
+      </div>
+    </div>
+
+    </div><!-- /page-summary -->
+
+    <!-- PAGE: DETAIL -->
+    <div id="page-detail" class="page">
+
+      <div class="card">
+        <h2>Detailed analysis</h2>
+        <p style="font-size: 14px; color: #4B5563; margin-bottom: 8px;">
+          A word-by-word breakdown showing how long each syllable lasted and where you placed your stress. The longest bar is the syllable you emphasised. The yellow-highlighted block is where the stress should fall.
+        </p>
+        <div class="legend">
+          <span><span class="legend-swatch" style="background: #FCD34D;"></span>Where stress should fall</span>
+          <span><span class="legend-swatch" style="background: #DBEAFE;"></span>Other syllables</span>
+          <span><span class="legend-swatch" style="background: #10B981;"></span>Stress placed correctly</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Multi-syllable words from this session</h2>
+
+        <!-- electricity -->
+        <div class="word-detail">
+          <div class="word-detail-head">
+            <span class="wd-word">electricity</span>
+            <span class="wd-ipa">/ɪˌlɛkˈtrɪ.sɪ.ti/</span>
+          </div>
+          <div class="wd-meta">5 syllables · stress on 3rd (TRIC)</div>
+          <div class="syllable-bars">
+            <div class="syl-bar" style="flex: 1.7;">e</div>
+            <div class="syl-bar" style="flex: 2.5;">lec</div>
+            <div class="syl-bar stressed-expected" style="flex: 2.1;">tric</div>
+            <div class="syl-bar" style="flex: 1.3;">i</div>
+            <div class="syl-bar stressed-actual" style="flex: 3.9;">ty</div>
+          </div>
+          <div class="syl-durations">
+            <span class="syl-dur" style="flex: 1.7;">0.17s</span>
+            <span class="syl-dur" style="flex: 2.5;">0.25s</span>
+            <span class="syl-dur" style="flex: 2.1;">0.21s</span>
+            <span class="syl-dur" style="flex: 1.3;">0.13s</span>
+            <span class="syl-dur" style="flex: 3.9;">0.39s</span>
+          </div>
+          <span class="stress-verdict verdict-off">Stress placed on "ty" — should be on "TRIC"</span>
+        </div>
+
+        <!-- exercise -->
+        <div class="word-detail">
+          <div class="word-detail-head">
+            <span class="wd-word">exercise</span>
+            <span class="wd-ipa">/ˈɛk.sə.saɪz/</span>
+          </div>
+          <div class="wd-meta">3 syllables · stress on 1st (EX)</div>
+          <div class="syllable-bars">
+            <div class="syl-bar both" style="flex: 3.2;">ex</div>
+            <div class="syl-bar" style="flex: 1.4;">er</div>
+            <div class="syl-bar" style="flex: 2.2;">cise</div>
+          </div>
+          <div class="syl-durations">
+            <span class="syl-dur" style="flex: 3.2;">0.32s</span>
+            <span class="syl-dur" style="flex: 1.4;">0.14s</span>
+            <span class="syl-dur" style="flex: 2.2;">0.22s</span>
+          </div>
+          <span class="stress-verdict verdict-ok">✓ Stress placed correctly</span>
+        </div>
+
+        <!-- immediately -->
+        <div class="word-detail">
+          <div class="word-detail-head">
+            <span class="wd-word">immediately</span>
+            <span class="wd-ipa">/ɪˈmiː.di.ət.li/</span>
+          </div>
+          <div class="wd-meta">5 syllables · stress on 2nd (MEE)</div>
+          <div class="syllable-bars">
+            <div class="syl-bar" style="flex: 1.2;">im</div>
+            <div class="syl-bar both" style="flex: 4.1;">mee</div>
+            <div class="syl-bar" style="flex: 1.6;">di</div>
+            <div class="syl-bar" style="flex: 1.0;">at</div>
+            <div class="syl-bar" style="flex: 2.0;">ly</div>
+          </div>
+          <div class="syl-durations">
+            <span class="syl-dur" style="flex: 1.2;">0.12s</span>
+            <span class="syl-dur" style="flex: 4.1;">0.41s</span>
+            <span class="syl-dur" style="flex: 1.6;">0.16s</span>
+            <span class="syl-dur" style="flex: 1.0;">0.10s</span>
+            <span class="syl-dur" style="flex: 2.0;">0.20s</span>
+          </div>
+          <span class="stress-verdict verdict-ok">✓ Stress placed correctly</span>
+        </div>
+
+        <!-- delicious -->
+        <div class="word-detail">
+          <div class="word-detail-head">
+            <span class="wd-word">delicious</span>
+            <span class="wd-ipa">/dɪˈlɪ.ʃəs/</span>
+          </div>
+          <div class="wd-meta">3 syllables · stress on 2nd (LI)</div>
+          <div class="syllable-bars">
+            <div class="syl-bar" style="flex: 1.5;">de</div>
+            <div class="syl-bar both" style="flex: 3.5;">li</div>
+            <div class="syl-bar" style="flex: 2.0;">cious</div>
+          </div>
+          <div class="syl-durations">
+            <span class="syl-dur" style="flex: 1.5;">0.15s</span>
+            <span class="syl-dur" style="flex: 3.5;">0.35s</span>
+            <span class="syl-dur" style="flex: 2.0;">0.20s</span>
+          </div>
+          <span class="stress-verdict verdict-ok">✓ Stress placed correctly</span>
+        </div>
+
+        <!-- forget -->
+        <div class="word-detail">
+          <div class="word-detail-head">
+            <span class="wd-word">forget</span>
+            <span class="wd-ipa">/fəˈɡɛt/</span>
+          </div>
+          <div class="wd-meta">2 syllables · stress on 2nd (GET)</div>
+          <div class="syllable-bars">
+            <div class="syl-bar" style="flex: 1.5;">for</div>
+            <div class="syl-bar both" style="flex: 3.0;">get</div>
+          </div>
+          <div class="syl-durations">
+            <span class="syl-dur" style="flex: 1.5;">0.15s</span>
+            <span class="syl-dur" style="flex: 3.0;">0.30s</span>
+          </div>
+          <span class="stress-verdict verdict-ok">✓ Stress placed correctly</span>
+        </div>
+
+      </div>
+
+      <div class="card">
+        <h2>What you can take from this</h2>
+        <p style="font-size: 14px; color: #374151; line-height: 1.7;">
+          On most multi-syllable words you placed stress correctly — your stress placement instinct is good. The notable exception was <strong>electricity</strong>, where you stressed the final syllable instead of "TRIC". This is a common pattern: word-final syllables naturally lengthen in English, but the stress should still land on TRIC. Practising this word with deliberate stress on the third syllable (e-lec-<strong>TRIC</strong>-i-ty) would help.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>About this view</h2>
+        <p style="font-size: 14px; color: #6B7280; line-height: 1.6;">
+          Bar widths show how long you held each syllable. In English, the stressed syllable is naturally longer than the unstressed ones. By comparing your timing against the expected stress pattern, we can see whether your stress placement matches a native speaker's.
+        </p>
+        <p style="font-size: 13px; color: #9CA3AF; margin-top: 10px;">
+          Note: word-final syllables can sometimes appear longest due to natural lengthening at the end of a word. The system compensates for this when judging stress placement.
+        </p>
+      </div>
+
+    </div><!-- /page-detail -->
+
+    <div class="footer">
+      Session run today · 15 words · 6 sentences · 8 minimal pairs · 3 free prompts · Seed 1777631870283
+    </div>
+
+    <script>
+      function showPage(name) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('page-' + name).classList.add('active');
+        event.target.classList.add('active');
+        window.scrollTo(0, 0);
+      }
+    </script>
+
+  </div>
+</body>
+</html>

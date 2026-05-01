@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AZE Pronunciation Focus — Results</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-dark: #0D0F1A;
+    --bg-card: #151729;
+    --bg-card-hover: #1A1D32;
+    --bg-surface: #1E2140;
+    --border: rgba(255,255,255,0.08);
+    --border-accent: rgba(255,255,255,0.12);
+    --gold: #E5A832;
+    --gold-dim: rgba(229,168,50,0.15);
+    --gold-glow: rgba(229,168,50,0.3);
+    --green: #1D6E5A;
+    --green-light: #2ECC8B;
+    --green-bg: rgba(46,204,139,0.12);
+    --purple: #8B5CF6;
+    --purple-bg: rgba(139,92,246,0.12);
+    --orange: #F59E0B;
+    --orange-bg: rgba(245,158,11,0.12);
+    --red: #EF4444;
+    --red-bg: rgba(239,68,68,0.12);
+    --blue: #3B82F6;
+    --blue-bg: rgba(59,130,246,0.12);
+    --cyan: #06B6D4;
+    --cyan-bg: rgba(6,182,212,0.12);
+    --text-white: #F0F0F5;
+    --text-secondary: #9CA3BF;
+    --text-muted: #6B7294;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-white);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Top Bar ────────────────────────── */
+  .topbar {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-icon {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--gold);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .topbar-icon svg { width: 20px; height: 20px; }
+  .topbar-title { font-size: 15px; font-weight: 600; color: var(--text-white); }
+  .topbar-subtitle { font-size: 12px; color: var(--text-muted); }
+  .topbar-badge {
+    font-size: 11px;
+    background: var(--gold-dim);
+    color: var(--gold);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Progress Dots (like the speaking test) ── */
+  .progress-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 32px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    height: 40px;
+  }
+  .progress-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border-accent);
+  }
+  .progress-line.active { background: var(--gold); }
+  .progress-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border-accent);
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .progress-dot.active { border-color: var(--gold); background: var(--gold); }
+  .progress-dot.completed { border-color: var(--green-light); background: var(--green-light); }
+
+  /* ── Student Tabs ───────────────────── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 12px 32px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 8px 18px;
+    border: 1px solid transparent;
+    background: none;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .tab:hover { color: var(--text-secondary); background: var(--bg-surface); }
+  .tab.active {
+    color: var(--gold);
+    background: var(--gold-dim);
+    border-color: rgba(229,168,50,0.25);
+    font-weight: 600;
+  }
+
+  /* ── Main ────────────────────────────── */
+  .main { max-width: 1140px; margin: 0 auto; padding: 28px 32px; }
+
+  /* ── Overall Score ──────────────────── */
+  .overall-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .score-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+  .score-ring-wrap { position: relative; flex-shrink: 0; }
+  .score-ring { width: 150px; height: 150px; }
+  .score-ring-bg { fill: none; stroke: var(--bg-surface); stroke-width: 10; }
+  .score-ring-fill {
+    fill: none; stroke-width: 10; stroke-linecap: round;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.5s;
+    filter: drop-shadow(0 0 8px var(--gold-glow));
+  }
+  .score-num {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .score-num .val {
+    font-size: 44px; font-weight: 800; line-height: 1;
+    background: linear-gradient(135deg, var(--gold), #F5D78E);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .score-num .lbl { font-size: 11px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .score-info { flex: 1; }
+  .band-label { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .band-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+  /* ── Radar Chart ────────────────────── */
+  .radar-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .radar-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .radar-svg { width: 280px; height: 280px; }
+
+  /* ── Clarity Indicator ──────────────── */
+  .clarity-strip {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .clarity-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .clarity-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .clarity-value { font-size: 18px; font-weight: 700; }
+  .clarity-desc { font-size: 13px; color: var(--text-secondary); flex: 1; }
+  .clarity-flag {
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  /* ── Dimension Cards ────────────────── */
+  .dim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .dim-card:hover { border-color: var(--border-accent); background: var(--bg-card-hover); }
+  .dim-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .dim-name { font-size: 14px; font-weight: 600; }
+  .dim-weight {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .dim-score-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+  .dim-score { font-size: 34px; font-weight: 800; }
+  .dim-band { font-size: 12px; color: var(--text-secondary); }
+  .dim-bar { height: 4px; background: var(--bg-surface); border-radius: 2px; overflow: hidden; }
+  .dim-bar-fill { height: 100%; border-radius: 2px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+
+  /* ── Formula Card ───────────────────── */
+  .formula-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .formula-title { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .formula {
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    background: var(--bg-surface);
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    overflow-x: auto;
+  }
+  .formula .val { color: var(--gold); font-weight: 600; }
+  .formula .op { color: var(--text-muted); }
+
+  /* ── Weaknesses ─────────────────────── */
+  .weakness-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .weakness-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--text-white); }
+  .weakness-table { width: 100%; border-collapse: collapse; }
+  .weakness-table th {
+    text-align: left; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-muted); padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .weakness-table td { padding: 10px 14px; font-size: 14px; border-bottom: 1px solid var(--border); }
+  .weakness-table tr:last-child td { border-bottom: none; }
+  .phoneme-chip {
+    display: inline-block;
+    background: var(--purple-bg); color: #C4B5FD;
+    padding: 3px 12px; border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;
+  }
+  .confusion-chip {
+    display: inline-block;
+    background: var(--red-bg); color: #FCA5A5;
+    padding: 3px 12px; border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;
+  }
+  .arrow { color: var(--text-muted); }
+  .count-wrap { display: flex; align-items: center; gap: 8px; }
+  .count-bar { height: 4px; background: var(--bg-surface); border-radius: 2px; width: 60px; overflow: hidden; }
+  .count-bar-fill { height: 100%; background: var(--red); border-radius: 2px; }
+  .no-weaknesses { text-align: center; padding: 28px; color: var(--text-muted); font-size: 13px; }
+
+  /* ── QA Flags ───────────────────────── */
+  .qa-flags {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .qa-flag {
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: var(--orange-bg);
+    color: var(--orange);
+    font-weight: 500;
+    border: 1px solid rgba(245,158,11,0.2);
+  }
+
+  /* ── Minimum Data Warning ───────────── */
+  .min-data-warning {
+    background: var(--orange-bg);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    color: var(--orange);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  @media (max-width: 768px) {
+    .overall-section, .dim-grid { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <span>Pronunciation Focus</span>
+    </div>
+    <div class="topbar-subtitle">Session Results</div>
+  </div>
+  <div class="topbar-badge">PROTOTYPE v2</div>
+</div>
+
+<!-- Progress dots -->
+<div class="progress-bar">
+  <div class="progress-dot completed"></div>
+  <div class="progress-line active"></div>
+  <div class="progress-dot completed"></div>
+  <div class="progress-line active"></div>
+  <div class="progress-dot completed"></div>
+  <div class="progress-line active"></div>
+  <div class="progress-dot active"></div>
+  <div class="progress-line"></div>
+  <div class="progress-dot"></div>
+</div>
+
+<!-- Student tabs -->
+<div class="tabs" id="tabs"></div>
+
+<!-- Main content -->
+<div class="main">
+  <div id="minDataWarning" class="min-data-warning" style="display:none;">
+    ⚠ Response too short to score — please try again.
+  </div>
+
+  <div class="overall-section">
+    <div class="score-card">
+      <div class="score-ring-wrap">
+        <svg class="score-ring" viewBox="0 0 150 150">
+          <circle class="score-ring-bg" cx="75" cy="75" r="62"/>
+          <circle class="score-ring-fill" id="ringFill" cx="75" cy="75" r="62"
+            stroke-dasharray="389.56" stroke-dashoffset="389.56"
+            transform="rotate(-90 75 75)"/>
+        </svg>
+        <div class="score-num">
+          <div class="val" id="overallScore">--</div>
+          <div class="lbl">score</div>
+        </div>
+      </div>
+      <div class="score-info">
+        <div class="band-label" id="bandLabel">--</div>
+        <div class="band-desc" id="bandDesc"></div>
+      </div>
+    </div>
+    <div class="radar-card">
+      <div class="radar-title">Performance Profile</div>
+      <svg class="radar-svg" id="radarChart" viewBox="0 0 300 300"></svg>
+    </div>
+  </div>
+
+  <!-- Clarity indicator strip -->
+  <div class="clarity-strip" id="clarityStrip"></div>
+
+  <!-- Formula -->
+  <div class="formula-card" id="formulaCard"></div>
+
+  <!-- Dimensions -->
+  <div class="dim-grid" id="dimGrid"></div>
+
+  <!-- Weaknesses -->
+  <div class="weakness-card" id="weaknessCard"></div>
+
+  <!-- QA Flags -->
+  <div class="qa-flags" id="qaFlags"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// V2 SCORING ENGINE
+// ═══════════════════════════════════════════════════
+
+function scorePhonemeAccuracy(list) {
+  const all = [];
+  for (const w of list) {
+    if (w.phone_score_list) {
+      for (const p of w.phone_score_list) {
+        if (p.quality_score != null) all.push(p.quality_score);
+      }
+    }
+  }
+  return all.length ? all.reduce((s,v)=>s+v,0)/all.length : null;
+}
+
+function scoreWordStress(list) {
+  const ss = [];
+  for (const w of list) {
+    if (w.phone_score_list) {
+      for (const p of w.phone_score_list) {
+        if (p.stress_score != null) ss.push(p.stress_score);
+      }
+    }
+  }
+  return ss.length ? ss.reduce((s,v)=>s+v,0)/ss.length : null;
+}
+
+// V2: Fluency uses SpeechAce fluency score directly
+function scoreFluency(metrics) {
+  return metrics.speechace_fluency_score;
+}
+
+// V2: Connected Speech uses stepped gap-to-score mapping
+function scoreConnectedSpeech(wordAcc, sentAcc) {
+  if (wordAcc == null || sentAcc == null) return null;
+  const gap = wordAcc - sentAcc;
+  if (gap <= 0) return 100;
+  if (gap <= 5) return 90;
+  if (gap <= 10) return 80;
+  if (gap <= 15) return 65;
+  // gap 16+: linear from 50 down to 20
+  return Math.max(20, 50 - (gap - 16) * 2);
+}
+
+// V2 NEW: Consistency — SD of item-level phoneme accuracy averages
+function scoreConsistency(wordScoreList) {
+  const itemAverages = [];
+  for (const w of wordScoreList) {
+    if (w.phone_score_list && w.phone_score_list.length > 0) {
+      const avg = w.phone_score_list.reduce((s,p) => s + (p.quality_score||0), 0) / w.phone_score_list.length;
+      itemAverages.push(avg);
+    }
+  }
+  if (itemAverages.length < 2) return { score: null, sd: null, range: null, flag: false };
+
+  const mean = itemAverages.reduce((s,v)=>s+v,0) / itemAverages.length;
+  const variance = itemAverages.reduce((s,v)=>s + (v-mean)**2, 0) / itemAverages.length;
+  const sd = Math.sqrt(variance);
+  const range = Math.max(...itemAverages) - Math.min(...itemAverages);
+
+  // Map SD to score
+  let score;
+  if (sd <= 5) score = 90 + (5-sd)/5 * 10; // 90-100
+  else if (sd <= 10) score = 75 + (10-sd)/5 * 14; // 75-89
+  else if (sd <= 15) score = 60 + (15-sd)/5 * 14; // 60-74
+  else score = Math.max(30, 60 - (sd-15)/5 * 15); // below 60
+
+  return {
+    score: Math.round(score * 10) / 10,
+    sd: Math.round(sd * 10) / 10,
+    range: Math.round(range * 10) / 10,
+    flag: range >= 30
+  };
+}
+
+// V2: Clarity is separate indicator, not in composite
+function scoreClarity(correct, total) {
+  if (!total || total === 0) return null;
+  return Math.round((correct / total) * 1000) / 10;
+}
+
+// V2 weights
+const WEIGHTS = {
+  phonemeAccuracy: 0.25,
+  fluency: 0.22,
+  wordStress: 0.18,
+  consistency: 0.18,
+  connectedSpeech: 0.17,
+};
+
+function getOverallBand(score) {
+  if (score >= 90) return { band: "Easy to understand", color: "#2ECC8B", desc: "Listeners can follow with no difficulty. Pronunciation does not affect communication." };
+  if (score >= 75) return { band: "Generally clear", color: "#7DD87D", desc: "Listeners can follow with occasional difficulty. Minor errors rarely affect meaning." };
+  if (score >= 60) return { band: "Some effort needed", color: "#E5A832", desc: "Listeners need to concentrate. Errors sometimes affect understanding." };
+  if (score >= 45) return { band: "Frequently difficult", color: "#F59E0B", desc: "Listeners struggle regularly. Errors often affect meaning." };
+  return { band: "Very hard to understand", color: "#EF4444", desc: "Listeners cannot reliably follow. Significant errors throughout." };
+}
+
+function dimColor(score) {
+  if (score >= 85) return "#2ECC8B";
+  if (score >= 70) return "#7DD87D";
+  if (score >= 55) return "#E5A832";
+  return "#EF4444";
+}
+
+function dimBand(dim, score) {
+  const bands = {
+    phonemeAccuracy: ["Phonemes consistently well-produced","Most phonemes accurate","Noticeable errors on specific sounds","Frequent phoneme errors"],
+    fluency: ["Speech flows naturally","Generally fluent","Noticeable pausing or uneven pace","Frequent breaks, slow or choppy"],
+    wordStress: ["Stress patterns consistently accurate","Most stress accurate","Stress errors on several word types","Frequent stress errors"],
+    consistency: ["Highly consistent across session","Mostly consistent","Moderate inconsistency","High inconsistency"],
+    connectedSpeech: ["Holds up well in connected speech","Minor drop in sentence context","Noticeable drop in connected speech","Significant drop words to sentences"],
+  };
+  const b = bands[dim] || ["Strong","Good","Developing","Needs work"];
+  if (score >= 85) return b[0];
+  if (score >= 70) return b[1];
+  if (score >= 55) return b[2];
+  return b[3];
+}
+
+function detectWeaknesses(list) {
+  const conf = {};
+  for (const w of list) {
+    if (!w.phone_score_list) continue;
+    for (const p of w.phone_score_list) {
+      if (p.sound_most_like && p.phone && p.sound_most_like !== p.phone && p.quality_score < 80) {
+        if (!conf[p.phone]) conf[p.phone] = {};
+        conf[p.phone][p.sound_most_like] = (conf[p.phone][p.sound_most_like]||0) + 1;
+      }
+    }
+  }
+  const out = [];
+  for (const [t,c] of Object.entries(conf)) for (const [h,n] of Object.entries(c)) out.push({target:t,heard:h,count:n});
+  return out.sort((a,b)=>b.count-a.count);
+}
+
+function scoreStudent(data) {
+  // Minimum data check
+  if (data.word_count < 20 || data.fluency_metrics.duration < 10) {
+    return { tooShort: true };
+  }
+
+  const pa = scorePhonemeAccuracy(data.word_score_list);
+  const fl = scoreFluency(data.fluency_metrics);
+  const ws = scoreWordStress(data.word_score_list);
+  const cons = scoreConsistency(data.word_score_list);
+
+  const wAcc = scorePhonemeAccuracy(data.word_score_list_words);
+  const sAcc = scorePhonemeAccuracy(data.word_score_list_sentences);
+  const cs = scoreConnectedSpeech(wAcc, sAcc);
+
+  const clarity = scoreClarity(data.correct_word_count, data.word_count);
+
+  // QA flags
+  const qaFlags = [];
+  if (sAcc != null && wAcc != null && (sAcc - wAcc) >= 8) {
+    qaFlags.push("QA: Sentence accuracy 8+ points above word accuracy — flag for review");
+  }
+  if (cons.flag) {
+    qaFlags.push("QA: Item range ≥ 30 — possible scoring anomaly");
+  }
+  if (clarity !== null && clarity < 75) {
+    qaFlags.push("Low clarity — result may not fully reflect ability");
+  }
+
+  // Overall composite (V2 weights, Clarity NOT included)
+  const overall = Math.round((
+    (pa||0) * WEIGHTS.phonemeAccuracy +
+    (fl||0) * WEIGHTS.fluency +
+    (ws||0) * WEIGHTS.wordStress +
+    (cons.score||0) * WEIGHTS.consistency +
+    (cs||0) * WEIGHTS.connectedSpeech
+  ) * 10) / 10;
+
+  const band = getOverallBand(overall);
+
+  return {
+    tooShort: false,
+    overall,
+    band,
+    dimensions: {
+      phonemeAccuracy: { score: rd(pa), weight: "25%", band: dimBand("phonemeAccuracy",pa), color: dimColor(pa) },
+      fluency: { score: rd(fl), weight: "22%", band: dimBand("fluency",fl), color: dimColor(fl) },
+      wordStress: { score: rd(ws), weight: "18%", band: dimBand("wordStress",ws), color: dimColor(ws) },
+      consistency: { score: rd(cons.score), weight: "18%", band: dimBand("consistency",cons.score), color: dimColor(cons.score), sd: cons.sd },
+      connectedSpeech: { score: rd(cs), weight: "17%", band: dimBand("connectedSpeech",cs), color: dimColor(cs) },
+    },
+    clarity,
+    weaknesses: detectWeaknesses(data.word_score_list),
+    qaFlags,
+    raw: { pa, fl, ws, cons: cons.score, cs, clarity },
+  };
+}
+function rd(v) { return v != null ? Math.round(v*10)/10 : null; }
+
+// ═══════════════════════════════════════════════════
+// MOCK DATA
+// ═══════════════════════════════════════════════════
+function ph(phoneme, q, sml, ss, sl, psl) {
+  const e = { phone: phoneme, quality_score: q, sound_most_like: sml || phoneme };
+  if (ss !== undefined) { e.stress_score = ss; e.stress_level = sl; e.predicted_stress_level = psl; }
+  return e;
+}
+
+const students = [
+  {
+    name: "Student A — Strong",
+    word_score_list: [
+      { word: "have", phone_score_list: [ph("hh",85,"hh"),ph("ae",92.5,"ae",100,1,1),ph("v",98,"v")]},
+      { word: "beautiful", phone_score_list: [ph("b",95,"b"),ph("y",88,"y"),ph("uw",93,"uw",95,1,1),ph("t",90,"t"),ph("ah",87,"ah"),ph("f",92,"f"),ph("ah",85,"ah"),ph("l",94,"l")]},
+      { word: "thinking", phone_score_list: [ph("th",78,"t"),ph("ih",90,"ih",100,1,1),ph("ng",88,"ng"),ph("k",92,"k"),ph("ih",86,"ih"),ph("ng",91,"ng")]},
+      { word: "photograph", phone_score_list: [ph("f",91,"f"),ph("ow",85,"ow"),ph("t",93,"t"),ph("ah",82,"ah",90,1,1),ph("g",89,"g"),ph("r",87,"r"),ph("ae",90,"ae"),ph("f",94,"f")]},
+      { word: "comfortable", phone_score_list: [ph("k",90,"k"),ph("ah",85,"ah",88,1,1),ph("m",92,"m"),ph("f",88,"f"),ph("er",80,"er"),ph("t",86,"t"),ph("ah",78,"ah"),ph("b",91,"b"),ph("ah",82,"ah"),ph("l",89,"l")]},
+      { word: "environment", phone_score_list: [ph("ih",84,"ih"),ph("n",91,"n"),ph("v",88,"v"),ph("ay",83,"ay",92,1,1),ph("r",86,"r"),ph("ah",80,"ah"),ph("n",90,"n"),ph("m",87,"m"),ph("ah",82,"ah"),ph("n",89,"n"),ph("t",93,"t")]},
+    ],
+    word_score_list_words: [
+      { word: "have", phone_score_list: [ph("hh",85,"hh"),ph("ae",92.5,"ae"),ph("v",98,"v")]},
+      { word: "beautiful", phone_score_list: [ph("b",95,"b"),ph("y",88,"y"),ph("uw",93,"uw"),ph("t",90,"t"),ph("ah",87,"ah"),ph("f",92,"f"),ph("ah",85,"ah"),ph("l",94,"l")]},
+      { word: "photograph", phone_score_list: [ph("f",91,"f"),ph("ow",85,"ow"),ph("t",93,"t"),ph("ah",82,"ah"),ph("g",89,"g"),ph("r",87,"r"),ph("ae",90,"ae"),ph("f",94,"f")]},
+    ],
+    word_score_list_sentences: [
+      { word: "thinking", phone_score_list: [ph("th",72,"t"),ph("ih",85,"ih"),ph("ng",82,"ng"),ph("k",88,"k"),ph("ih",80,"ih"),ph("ng",86,"ng")]},
+      { word: "comfortable", phone_score_list: [ph("k",85,"k"),ph("ah",80,"ah"),ph("m",88,"m"),ph("f",82,"f"),ph("er",75,"er"),ph("t",80,"t"),ph("ah",72,"ah"),ph("b",86,"b"),ph("ah",76,"ah"),ph("l",83,"l")]},
+      { word: "environment", phone_score_list: [ph("ih",78,"ih"),ph("n",85,"n"),ph("v",82,"v"),ph("ay",77,"ay"),ph("r",80,"r"),ph("ah",74,"ah"),ph("n",84,"n"),ph("m",81,"m"),ph("ah",76,"ah"),ph("n",83,"n"),ph("t",87,"t")]},
+    ],
+    fluency_metrics: { speechace_fluency_score: 84, mean_length_run: 3.8, all_pause_duration: 12.5, duration: 66.97, speech_rate: 3.09 },
+    correct_word_count: 120, word_count: 135,
+  },
+  {
+    name: "Student B — Developing",
+    word_score_list: [
+      { word: "have", phone_score_list: [ph("hh",45,"t"),ph("ae",72,"eh",60,1,0),ph("v",78,"b")]},
+      { word: "think", phone_score_list: [ph("th",30,"s"),ph("ih",68,"ih",70,1,1),ph("ng",62,"n"),ph("k",75,"k")]},
+      { word: "world", phone_score_list: [ph("w",72,"w"),ph("er",48,"or"),ph("l",65,"l"),ph("d",70,"d")]},
+      { word: "comfortable", phone_score_list: [ph("k",70,"k"),ph("ah",55,"ow",45,1,0),ph("m",72,"m"),ph("f",60,"p"),ph("er",42,"ar"),ph("t",68,"t"),ph("ah",50,"ow"),ph("b",65,"b"),ph("ah",48,"ow"),ph("l",62,"l")]},
+      { word: "important", phone_score_list: [ph("ih",62,"ih"),ph("m",70,"m"),ph("p",65,"b"),ph("ao",55,"ah",50,1,0),ph("r",52,"l"),ph("t",72,"t"),ph("ah",58,"ah"),ph("n",68,"n"),ph("t",74,"t")]},
+      { word: "beautiful", phone_score_list: [ph("b",75,"b"),ph("y",58,"y"),ph("uw",65,"oo",55,1,0),ph("t",70,"t"),ph("ah",52,"ah"),ph("f",60,"p"),ph("ah",48,"ah"),ph("l",68,"l")]},
+    ],
+    word_score_list_words: [
+      { word: "have", phone_score_list: [ph("hh",52,"t"),ph("ae",75,"eh"),ph("v",82,"b")]},
+      { word: "think", phone_score_list: [ph("th",35,"s"),ph("ih",72,"ih"),ph("ng",68,"n"),ph("k",78,"k")]},
+      { word: "world", phone_score_list: [ph("w",78,"w"),ph("er",55,"or"),ph("l",70,"l"),ph("d",75,"d")]},
+    ],
+    word_score_list_sentences: [
+      { word: "comfortable", phone_score_list: [ph("k",62,"k"),ph("ah",45,"ow"),ph("m",65,"m"),ph("f",50,"p"),ph("er",35,"ar"),ph("t",60,"t"),ph("ah",40,"ow"),ph("b",58,"b"),ph("ah",38,"ow"),ph("l",55,"l")]},
+      { word: "important", phone_score_list: [ph("ih",52,"ih"),ph("m",62,"m"),ph("p",55,"b"),ph("ao",45,"ah"),ph("r",42,"l"),ph("t",65,"t"),ph("ah",48,"ah"),ph("n",60,"n"),ph("t",68,"t")]},
+      { word: "beautiful", phone_score_list: [ph("b",68,"b"),ph("y",48,"y"),ph("uw",55,"oo"),ph("t",62,"t"),ph("ah",42,"ah"),ph("f",50,"p"),ph("ah",38,"ah"),ph("l",60,"l")]},
+    ],
+    fluency_metrics: { speechace_fluency_score: 48, mean_length_run: 1.8, all_pause_duration: 28.5, duration: 72.0, speech_rate: 1.6 },
+    correct_word_count: 85, word_count: 140,
+  },
+  {
+    name: "Student C — Mid-range",
+    word_score_list: [
+      { word: "available", phone_score_list: [ph("ah",75,"ah"),ph("v",82,"v"),ph("ey",78,"ey",85,1,1),ph("l",80,"l"),ph("ah",72,"ah"),ph("b",85,"b"),ph("ah",70,"ah"),ph("l",82,"l")]},
+      { word: "temperature", phone_score_list: [ph("t",80,"t"),ph("eh",74,"eh",78,1,1),ph("m",82,"m"),ph("p",76,"p"),ph("er",68,"er"),ph("ah",70,"ah"),ph("ch",72,"ch"),ph("er",65,"ar")]},
+      { word: "development", phone_score_list: [ph("d",80,"d"),ph("ih",72,"ih"),ph("v",78,"v"),ph("eh",74,"eh",80,1,1),ph("l",82,"l"),ph("ah",70,"ah"),ph("p",76,"p"),ph("m",80,"m"),ph("ah",68,"ah"),ph("n",78,"n"),ph("t",84,"t")]},
+      { word: "situation", phone_score_list: [ph("s",78,"s"),ph("ih",72,"ih"),ph("ch",68,"sh"),ph("uw",74,"uw",75,1,1),ph("ey",76,"ey"),ph("sh",70,"sh"),ph("ah",66,"ah"),ph("n",80,"n")]},
+      { word: "opportunity", phone_score_list: [ph("aa",72,"ah"),ph("p",78,"p"),ph("er",68,"er"),ph("t",80,"t"),ph("uw",74,"uw",82,1,1),ph("n",78,"n"),ph("ah",70,"ah"),ph("t",82,"t"),ph("iy",76,"iy")]},
+    ],
+    word_score_list_words: [
+      { word: "available", phone_score_list: [ph("ah",80,"ah"),ph("v",86,"v"),ph("ey",82,"ey"),ph("l",84,"l"),ph("ah",78,"ah"),ph("b",88,"b"),ph("ah",76,"ah"),ph("l",85,"l")]},
+      { word: "temperature", phone_score_list: [ph("t",84,"t"),ph("eh",78,"eh"),ph("m",86,"m"),ph("p",80,"p"),ph("er",74,"er"),ph("ah",76,"ah"),ph("ch",78,"ch"),ph("er",72,"ar")]},
+    ],
+    word_score_list_sentences: [
+      { word: "development", phone_score_list: [ph("d",72,"d"),ph("ih",64,"ih"),ph("v",70,"v"),ph("eh",66,"eh"),ph("l",74,"l"),ph("ah",62,"ah"),ph("p",68,"p"),ph("m",72,"m"),ph("ah",60,"ah"),ph("n",70,"n"),ph("t",76,"t")]},
+      { word: "situation", phone_score_list: [ph("s",70,"s"),ph("ih",64,"ih"),ph("ch",58,"sh"),ph("uw",66,"uw"),ph("ey",68,"ey"),ph("sh",62,"sh"),ph("ah",58,"ah"),ph("n",72,"n")]},
+      { word: "opportunity", phone_score_list: [ph("aa",64,"ah"),ph("p",70,"p"),ph("er",60,"er"),ph("t",72,"t"),ph("uw",66,"uw"),ph("n",70,"n"),ph("ah",62,"ah"),ph("t",74,"t"),ph("iy",68,"iy")]},
+    ],
+    fluency_metrics: { speechace_fluency_score: 65, mean_length_run: 2.8, all_pause_duration: 18.0, duration: 65.0, speech_rate: 2.4 },
+    correct_word_count: 105, word_count: 130,
+  },
+];
+
+// ═══════════════════════════════════════════════════
+// RADAR CHART
+// ═══════════════════════════════════════════════════
+function drawRadar(result) {
+  const svg = document.getElementById('radarChart');
+  const cx = 150, cy = 150, maxR = 110;
+  // 6 axes: 5 scored + Clarity
+  const axes = [
+    { label: "Phoneme", value: result.dimensions.phonemeAccuracy.score },
+    { label: "Fluency", value: result.dimensions.fluency.score },
+    { label: "Stress", value: result.dimensions.wordStress.score },
+    { label: "Consistency", value: result.dimensions.consistency.score },
+    { label: "Connected", value: result.dimensions.connectedSpeech.score },
+    { label: "Clarity", value: result.clarity || 0 },
+  ];
+  const n = axes.length;
+  const angleStep = (2 * Math.PI) / n;
+  const startAngle = -Math.PI / 2;
+
+  // Grid rings
+  let html = '';
+  for (let ring = 1; ring <= 4; ring++) {
+    const r = (ring / 4) * maxR;
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      const a = startAngle + i * angleStep;
+      pts.push(`${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`);
+    }
+    html += `<polygon points="${pts.join(' ')}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+  }
+
+  // Axis lines
+  for (let i = 0; i < n; i++) {
+    const a = startAngle + i * angleStep;
+    const ex = cx + maxR * Math.cos(a);
+    const ey = cy + maxR * Math.sin(a);
+    html += `<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+  }
+
+  // Data polygon
+  const dataPts = [];
+  for (let i = 0; i < n; i++) {
+    const a = startAngle + i * angleStep;
+    const r = (axes[i].value / 100) * maxR;
+    dataPts.push(`${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`);
+  }
+  html += `<polygon points="${dataPts.join(' ')}" fill="rgba(229,168,50,0.15)" stroke="#E5A832" stroke-width="2"/>`;
+
+  // Data dots + labels
+  for (let i = 0; i < n; i++) {
+    const a = startAngle + i * angleStep;
+    const r = (axes[i].value / 100) * maxR;
+    const dx = cx + r * Math.cos(a);
+    const dy = cy + r * Math.sin(a);
+    html += `<circle cx="${dx}" cy="${dy}" r="4" fill="#E5A832"/>`;
+
+    // Labels
+    const lr = maxR + 18;
+    const lx = cx + lr * Math.cos(a);
+    const ly = cy + lr * Math.sin(a);
+    const anchor = Math.abs(Math.cos(a)) < 0.1 ? "middle" : (Math.cos(a) > 0 ? "start" : "end");
+    const isClarity = axes[i].label === "Clarity";
+    html += `<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="central"
+      fill="${isClarity ? 'rgba(6,182,212,0.8)' : 'rgba(255,255,255,0.5)'}" font-size="11" font-weight="500"
+      font-family="Inter,sans-serif">${axes[i].label}</text>`;
+    html += `<text x="${lx}" y="${ly + 14}" text-anchor="${anchor}" dominant-baseline="central"
+      fill="${isClarity ? '#06B6D4' : '#E5A832'}" font-size="12" font-weight="700"
+      font-family="Inter,sans-serif">${axes[i].value}</text>`;
+  }
+
+  svg.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// UI RENDERING
+// ═══════════════════════════════════════════════════
+const CIRC = 2 * Math.PI * 62;
+const dimLabels = {
+  phonemeAccuracy: "Phoneme Accuracy",
+  fluency: "Fluency",
+  wordStress: "Word Stress",
+  consistency: "Consistency",
+  connectedSpeech: "Connected Speech",
+};
+const dimIcons = {
+  phonemeAccuracy: { bg: "var(--purple-bg)", fg: "#C4B5FD" },
+  fluency: { bg: "var(--blue-bg)", fg: "#93C5FD" },
+  wordStress: { bg: "var(--green-bg)", fg: "#86EFAC" },
+  consistency: { bg: "var(--orange-bg)", fg: "#FCD34D" },
+  connectedSpeech: { bg: "var(--cyan-bg)", fg: "#67E8F9" },
+};
+
+let currentStudent = 0;
+
+function renderTabs() {
+  document.getElementById("tabs").innerHTML = students.map((s,i) =>
+    `<button class="tab ${i===currentStudent?'active':''}" onclick="selectStudent(${i})">${s.name}</button>`
+  ).join("");
+}
+
+function selectStudent(i) {
+  currentStudent = i;
+  renderTabs();
+  renderResults(scoreStudent(students[i]));
+}
+
+function renderResults(result) {
+  const warn = document.getElementById("minDataWarning");
+  if (result.tooShort) {
+    warn.style.display = "flex";
+    document.querySelector(".overall-section").style.display = "none";
+    document.getElementById("clarityStrip").style.display = "none";
+    document.getElementById("formulaCard").style.display = "none";
+    document.getElementById("dimGrid").style.display = "none";
+    document.getElementById("weaknessCard").style.display = "none";
+    document.getElementById("qaFlags").innerHTML = "";
+    return;
+  }
+  warn.style.display = "none";
+  document.querySelector(".overall-section").style.display = "";
+  document.getElementById("clarityStrip").style.display = "";
+  document.getElementById("formulaCard").style.display = "";
+  document.getElementById("dimGrid").style.display = "";
+  document.getElementById("weaknessCard").style.display = "";
+
+  // Overall ring
+  const offset = CIRC - (result.overall / 100) * CIRC;
+  const ring = document.getElementById("ringFill");
+  ring.style.strokeDashoffset = offset;
+  ring.style.stroke = result.band.color;
+
+  document.getElementById("overallScore").textContent = result.overall;
+  document.getElementById("bandLabel").textContent = result.band.band;
+  document.getElementById("bandLabel").style.color = result.band.color;
+  document.getElementById("bandDesc").textContent = result.band.desc;
+
+  // Radar
+  drawRadar(result);
+
+  // Clarity strip
+  const cl = result.clarity;
+  let clarityColor, clarityBg, clarityText, clarityIndicator;
+  if (cl >= 90) {
+    clarityColor = "#2ECC8B"; clarityBg = "var(--green-bg)";
+    clarityText = "High clarity — speech is consistently easy to transcribe";
+    clarityIndicator = "HIGH";
+  } else if (cl >= 75) {
+    clarityColor = "#E5A832"; clarityBg = "var(--gold-dim)";
+    clarityText = "Good clarity — most speech is clearly produced";
+    clarityIndicator = "GOOD";
+  } else {
+    clarityColor = "#EF4444"; clarityBg = "var(--red-bg)";
+    clarityText = "Low clarity — a significant proportion of speech was unclear";
+    clarityIndicator = "LOW";
+  }
+  document.getElementById("clarityStrip").innerHTML = `
+    <div class="clarity-icon" style="background:${clarityBg}; color:${clarityColor};">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+    </div>
+    <div>
+      <div class="clarity-label">Clarity Indicator</div>
+      <div class="clarity-value" style="color:${clarityColor}">${cl}%</div>
+    </div>
+    <div class="clarity-desc">${clarityText}</div>
+    <div class="clarity-flag" style="background:${clarityBg}; color:${clarityColor};">${clarityIndicator}</div>
+  `;
+
+  // Formula
+  const r = result.raw;
+  document.getElementById("formulaCard").innerHTML = `
+    <div class="formula-title">Overall Score Formula (V2)</div>
+    <div class="formula">
+      <span class="op">(</span><span class="val">${rd(r.pa)}</span><span class="op"> × 0.25) + (</span><span class="val">${rd(r.fl)}</span><span class="op"> × 0.22) + (</span><span class="val">${rd(r.ws)}</span><span class="op"> × 0.18) + (</span><span class="val">${rd(r.cons)}</span><span class="op"> × 0.18) + (</span><span class="val">${rd(r.cs)}</span><span class="op"> × 0.17) = </span><span class="val" style="font-size:15px;">${result.overall}</span>
+      <br><span class="op" style="font-size:11px;">Clarity (${rd(r.clarity)}%) shown separately — not in composite</span>
+    </div>
+  `;
+
+  // Dimension cards
+  const grid = document.getElementById("dimGrid");
+  grid.innerHTML = Object.entries(result.dimensions).map(([key,dim]) => {
+    const ic = dimIcons[key];
+    const extraInfo = key === "consistency" && dim.sd != null ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">SD of item averages: ${dim.sd}</div>` : "";
+    return `
+      <div class="dim-card">
+        <div class="dim-top">
+          <div class="dim-name" style="color:${ic.fg}">${dimLabels[key]}</div>
+          <div class="dim-weight" style="background:${ic.bg}; color:${ic.fg}">${dim.weight}</div>
+        </div>
+        <div class="dim-score-row">
+          <div class="dim-score" style="color:${dim.color}">${dim.score}</div>
+          <div class="dim-band">${dim.band}</div>
+        </div>
+        <div class="dim-bar"><div class="dim-bar-fill" style="width:${dim.score}%; background:${dim.color};"></div></div>
+        ${extraInfo}
+      </div>
+    `;
+  }).join("");
+
+  // Weaknesses
+  const wCard = document.getElementById("weaknessCard");
+  if (result.weaknesses.length === 0) {
+    wCard.innerHTML = `<div class="weakness-title">Phoneme Weaknesses</div><div class="no-weaknesses">No significant phoneme confusions detected</div>`;
+  } else {
+    const mx = Math.max(...result.weaknesses.map(w=>w.count));
+    wCard.innerHTML = `
+      <div class="weakness-title">Phoneme Weaknesses</div>
+      <table class="weakness-table">
+        <thead><tr><th>Target</th><th></th><th>Heard As</th><th>Count</th></tr></thead>
+        <tbody>${result.weaknesses.slice(0,8).map(w=>`
+          <tr>
+            <td><span class="phoneme-chip">/${w.target}/</span></td>
+            <td class="arrow">→</td>
+            <td><span class="confusion-chip">/${w.heard}/</span></td>
+            <td><div class="count-wrap"><div class="count-bar"><div class="count-bar-fill" style="width:${(w.count/mx)*100}%"></div></div><span style="font-size:12px;color:var(--text-muted)">${w.count}×</span></div></td>
+          </tr>`).join("")}
+        </tbody>
+      </table>`;
+  }
+
+  // QA flags
+  const flagsEl = document.getElementById("qaFlags");
+  if (result.qaFlags.length > 0) {
+    flagsEl.innerHTML = result.qaFlags.map(f => `<div class="qa-flag">⚠ ${f}</div>`).join("");
+  } else {
+    flagsEl.innerHTML = "";
+  }
+}
+
+// Boot
+renderTabs();
+selectStudent(0);
+</script>
+</body>
+</html>

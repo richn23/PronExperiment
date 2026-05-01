@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>scoring.js — fixture sanity check</title>
+    <style>
+      :root {
+        --pass: #16a34a;
+        --fail: #dc2626;
+        --na: #9ca3af;
+      }
+      * { box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f6f7fa;
+        color: #0f172a;
+        margin: 0;
+        padding: 24px;
+        line-height: 1.5;
+      }
+      h1 { margin: 0 0 8px; font-size: 24px; }
+      h2 { margin: 32px 0 12px; font-size: 18px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.4px; }
+      .container { max-width: 920px; margin: 0 auto; }
+      .summary {
+        display: flex;
+        gap: 12px;
+        margin: 8px 0 16px;
+        flex-wrap: wrap;
+      }
+      .pill {
+        background: white;
+        border: 1px solid #e1e5ec;
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .pill.pass { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+      .pill.fail { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+      .pill.muted { color: #6b7280; }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border: 1px solid #e1e5ec;
+        border-radius: 12px;
+        overflow: hidden;
+        font-size: 14px;
+      }
+      th, td {
+        padding: 10px 14px;
+        text-align: left;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: top;
+      }
+      th { background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: #6b7280; }
+      tr:last-child td { border-bottom: none; }
+      td.status { white-space: nowrap; font-weight: 600; }
+      td.pass { color: var(--pass); }
+      td.fail { color: var(--fail); }
+      td.actual { font-variant-numeric: tabular-nums; }
+      td.expected { color: #6b7280; font-variant-numeric: tabular-nums; }
+      .file-row {
+        background: white;
+        border: 1px solid #e1e5ec;
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      input[type="file"] { font-size: 14px; }
+      .live-panel {
+        background: white;
+        border: 1px solid #e1e5ec;
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+      }
+      .live-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+        margin: 8px 0 16px;
+      }
+      .stat-card {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .stat-card .lbl { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px; }
+      .stat-card .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .stat-card .sub { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+      .high { color: #10b981; } .mid { color: #f59e0b; } .low { color: #ef4444; } .na { color: var(--na); }
+      .chip {
+        display: inline-block;
+        background: #d1fae5;
+        color: #065f46;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        margin: 2px 4px 2px 0;
+      }
+      .focus-row {
+        padding: 8px 0;
+        border-top: 1px solid #f3f4f6;
+        font-size: 14px;
+      }
+      .focus-row:first-child { border-top: none; }
+      .focus-row .code { font-weight: 700; color: #dc2626; }
+      .focus-row .label { color: #6b7280; }
+      .focus-row .ex { font-size: 13px; color: #4b5563; margin-top: 2px; }
+      pre.json {
+        background: #0f172a;
+        color: #d1d5db;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 11px;
+        line-height: 1.5;
+        overflow: auto;
+        max-height: 320px;
+      }
+      .muted { color: #6b7280; font-size: 13px; }
+      details summary { cursor: pointer; font-weight: 500; padding: 4px 0; }
+      .nav { font-size: 13px; }
+      .nav a { color: #2563eb; text-decoration: none; margin-right: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>scoring.js — fixture sanity check</h1>
+      <p class="muted">
+        Synthetic fixtures lock the formulas. The "live session" loader runs the engine
+        against a real <code>aze-session-*.json</code> dump and prints the 5 dimensions
+        + section scores side-by-side with the report mockup's targets.
+      </p>
+      <p class="nav">
+        <a href="#synthetic">Synthetic</a>
+        <a href="#live">Live</a>
+        <a href="index.html">← Back to app</a>
+      </p>
+
+      <h2 id="synthetic">Synthetic fixtures</h2>
+      <div id="syntheticSummary" class="summary"></div>
+      <table>
+        <thead><tr><th style="width:30%">Test</th><th style="width:35%">Detail</th><th>Expected</th><th>Actual</th><th>Result</th></tr></thead>
+        <tbody id="syntheticTableBody"></tbody>
+      </table>
+
+      <h2 id="live">Live session JSON</h2>
+      <div class="file-row">
+        <label>
+          Load a session dump:
+          <input type="file" id="fileInput" accept=".json,application/json" />
+        </label>
+        <button id="loadDefault" type="button">Try ./aze-session.json</button>
+      </div>
+      <div id="liveOutput"></div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="scoring.js"></script>
+    <script>
+      // =========================================================================
+      // Test infra — tiny pass/fail collector
+      // =========================================================================
+
+      const tests = [];
+      function test(name, detail, expected, actual, opts = {}) {
+        const tol = typeof opts.tol === "number" ? opts.tol : 0;
+        let pass;
+        if (expected === null || actual === null) {
+          pass = expected === actual;
+        } else if (typeof expected === "number" && typeof actual === "number") {
+          pass = Math.abs(expected - actual) <= tol;
+        } else if (Array.isArray(expected)) {
+          pass =
+            Array.isArray(actual) &&
+            actual.length === expected.length &&
+            expected.every((v, i) => v === actual[i]);
+        } else {
+          pass = expected === actual;
+        }
+        tests.push({ name, detail, expected, actual, pass });
+      }
+
+      function flushTests() {
+        const tbody = document.getElementById("syntheticTableBody");
+        tbody.innerHTML = tests
+          .map((t) => `
+            <tr>
+              <td>${escapeHtml(t.name)}</td>
+              <td class="muted">${escapeHtml(t.detail)}</td>
+              <td class="expected">${formatVal(t.expected)}</td>
+              <td class="actual">${formatVal(t.actual)}</td>
+              <td class="status ${t.pass ? "pass" : "fail"}">${t.pass ? "PASS" : "FAIL"}</td>
+            </tr>
+          `)
+          .join("");
+
+        const passN = tests.filter((t) => t.pass).length;
+        const failN = tests.length - passN;
+        document.getElementById("syntheticSummary").innerHTML = `
+          <span class="pill pass">${passN} passing</span>
+          ${failN ? `<span class="pill fail">${failN} failing</span>` : ""}
+          <span class="pill muted">${tests.length} tests total</span>
+        `;
+      }
+
+      function escapeHtml(s) { return Utils.escapeHtml(s); }
+      function formatVal(v) {
+        if (v === null) return "null";
+        if (Array.isArray(v)) return JSON.stringify(v);
+        if (typeof v === "object") return JSON.stringify(v);
+        return String(v);
+      }
+
+      // =========================================================================
+      // Fixture builders — reproduce the Azure response shape we get on the wire,
+      // pared down to the fields scoring.js actually reads.
+      // =========================================================================
+
+      // A Task 1 / 2 / 3 PA envelope (resolved promise from scorePronunciation)
+      function makePaEnvelope({ accuracy = 90, fluency = 100, prosody = 0, completeness = 100, pron = 90, words }) {
+        return {
+          text: words.map((w) => w.Word).join(" "),
+          reason: 3,
+          reasonName: "RecognizedSpeech",
+          json: {
+            RecognitionStatus: "Success",
+            DisplayText: words.map((w) => w.Word).join(" "),
+            NBest: [{
+              Confidence: 0.95,
+              PronunciationAssessment: {
+                AccuracyScore: accuracy,
+                FluencyScore: fluency,
+                ProsodyScore: prosody,
+                CompletenessScore: completeness,
+                PronScore: pron,
+              },
+              Words: words,
+            }],
+          },
+          referenceText: words.map((w) => w.Word).join(" "),
+        };
+      }
+
+      // A single Word block. Phonemes is an array of [code, score] pairs.
+      function makeWord(text, accuracy, phonemes, opts = {}) {
+        const offset = opts.offset || 0;
+        const duration = opts.duration || 1000000;
+        const phonemeStep = duration / Math.max(1, phonemes.length);
+        return {
+          Word: text,
+          Offset: offset,
+          Duration: duration,
+          PronunciationAssessment: {
+            AccuracyScore: accuracy,
+            ErrorType: "None",
+          },
+          Syllables: opts.syllables || [],
+          Phonemes: phonemes.map(([code, score], i) => ({
+            Phoneme: code,
+            Offset: offset + i * phonemeStep,
+            Duration: phonemeStep,
+            PronunciationAssessment: { AccuracyScore: score },
+          })),
+        };
+      }
+
+      // Empty session shell
+      function blankSession() {
+        return {
+          seed: 1,
+          startedAt: 0,
+          finishedAt: 0,
+          data: { words: [], pairs: [], tips: {} },
+          task1: { practice: null, selected: [], results: [], hintLog: [] },
+          task2: { selected: [], results: [] },
+          task3: { selected: [], results: [] },
+          task4: { selected: [], results: [] },
+          scores: null,
+        };
+      }
+
+      // =========================================================================
+      // Synthetic test cases
+      // =========================================================================
+
+      // TC1 — Phoneme accuracy: average of per-phoneme scores across the session.
+      (function tc_phonemeAccuracy() {
+        const s = blankSession();
+        // Two words, six phonemes total: 80,90,100, 70,80,90 → mean 85
+        s.task1.results = [
+          {
+            word_id: "w_x", word: "alpha", target_sound: "AA", syllables: 2, stress_pattern: [1, 0],
+            azure: makePaEnvelope({
+              accuracy: 90, pron: 90,
+              words: [makeWord("alpha", 90, [["aa", 80], ["l", 90], ["f", 100]])],
+            }),
+          },
+          {
+            word_id: "w_y", word: "beta", target_sound: "B", syllables: 2, stress_pattern: [1, 0],
+            azure: makePaEnvelope({
+              accuracy: 80, pron: 80,
+              words: [makeWord("beta", 80, [["b", 70], ["iy", 80], ["t", 90]])],
+            }),
+          },
+        ];
+        const r = Scoring.compute(s);
+        test(
+          "Phoneme accuracy",
+          "Six phonemes: [80,90,100, 70,80,90] → mean 85",
+          85,
+          r.dimensions.phoneme,
+        );
+      })();
+
+      // TC2 — Fluency: mean of FluencyScore across Task 2 + Task 4 sentences only.
+      (function tc_fluency() {
+        const s = blankSession();
+        s.task1.results = [{ // Task 1 fluency must be IGNORED
+          word_id: "w_x", word: "ship", target_sound: "SH", syllables: 1, stress_pattern: [1],
+          azure: makePaEnvelope({
+            accuracy: 95, fluency: 100, pron: 95,
+            words: [makeWord("ship", 95, [["sh", 95], ["ih", 95], ["p", 95]])],
+          }),
+        }];
+        s.task2.results = [
+          {
+            item_id: "s_1", item_type: "sentence", text: "I went home.",
+            azure: makePaEnvelope({
+              accuracy: 90, fluency: 80, pron: 85,
+              words: [makeWord("I", 90, [["ay", 90]]), makeWord("went", 90, [["w", 90]]), makeWord("home", 90, [["hh", 90]])],
+            }),
+          },
+          {
+            item_id: "s_2", item_type: "sentence", text: "She is tall.",
+            azure: makePaEnvelope({
+              accuracy: 92, fluency: 90, pron: 90,
+              words: [makeWord("she", 92, [["sh", 92]]), makeWord("is", 92, [["ih", 92]]), makeWord("tall", 92, [["t", 92]])],
+            }),
+          },
+        ];
+        s.task4.results = [
+          {
+            prompt_id: "q_1", prompt_kind: "question", prompt_text: "Tell me about your day.",
+            azure: { transcript: "I had a busy day at work today.", confidence: 0.9, lowConfidence: false,
+              paResult: makePaEnvelope({ accuracy: 90, fluency: 100, pron: 92,
+                words: [makeWord("busy", 90, [["b", 90]]), makeWord("work", 90, [["w", 90]])],
+              }),
+            },
+          },
+        ];
+        const r = Scoring.compute(s);
+        // Fluency mean of 80, 90, 100 = 90
+        test(
+          "Fluency",
+          "Three sentences with fluency scores [80, 90, 100]; Task 1's fluency must be ignored",
+          90,
+          r.dimensions.fluency,
+        );
+      })();
+
+      // TC3 — Word stress: phonemes overlapping the stressed syllable.
+      (function tc_wordStress() {
+        const s = blankSession();
+        // 2-syllable word with stress pattern [1, 0]; Azure returns 2 syllables.
+        // Stressed syl spans 0–1000000; phoneme 0 (offset 0–500000, score 75)
+        // and phoneme 1 (offset 500000–1000000, score 85) BOTH overlap the
+        // stressed syllable. Phoneme 2 (offset 1000000–1500000, score 100)
+        // falls in the unstressed syllable. Mean of stressed phonemes = 80.
+        const word = {
+          Word: "robot",
+          Offset: 0,
+          Duration: 1500000,
+          PronunciationAssessment: { AccuracyScore: 85, ErrorType: "None" },
+          Syllables: [
+            { Syllable: "ro", Offset: 0, Duration: 1000000, PronunciationAssessment: { AccuracyScore: 80 } },
+            { Syllable: "bot", Offset: 1000000, Duration: 500000, PronunciationAssessment: { AccuracyScore: 100 } },
+          ],
+          Phonemes: [
+            { Phoneme: "r", Offset: 0,        Duration: 500000, PronunciationAssessment: { AccuracyScore: 75 } },
+            { Phoneme: "ow", Offset: 500000,  Duration: 500000, PronunciationAssessment: { AccuracyScore: 85 } },
+            { Phoneme: "b", Offset: 1000000,  Duration: 500000, PronunciationAssessment: { AccuracyScore: 100 } },
+          ],
+        };
+        s.task1.results = [{
+          word_id: "w_robot", word: "robot", target_sound: "R",
+          syllables: 2, stress_pattern: [1, 0],
+          azure: makePaEnvelope({ accuracy: 85, pron: 85, words: [word] }),
+        }];
+        const r = Scoring.compute(s);
+        test(
+          "Word stress",
+          "stress_pattern [1,0]; stressed-syllable phonemes [75, 85] → mean 80",
+          80,
+          r.dimensions.stress,
+        );
+      })();
+
+      // TC4 — Sentence stability: Task 1 vs Task 2 phoneme-avg gap.
+      (function tc_stability_negativeGap() {
+        // T1 avg < T2 avg → no penalty, score = 100
+        const s = blankSession();
+        s.task1.results = [{
+          word_id: "w_a", word: "ship", target_sound: "SH", syllables: 1, stress_pattern: [1],
+          azure: makePaEnvelope({ accuracy: 80, pron: 80,
+            words: [makeWord("ship", 80, [["sh", 80], ["ih", 80], ["p", 80]])],
+          }),
+        }];
+        s.task2.results = [{
+          item_id: "s_1", item_type: "sentence", text: "She is tall.",
+          azure: makePaEnvelope({ accuracy: 90, pron: 90,
+            words: [makeWord("she", 90, [["sh", 90], ["iy", 90]])],
+          }),
+        }];
+        const r = Scoring.compute(s);
+        test(
+          "Sentence stability (T1<T2)",
+          "T1 phonemes mean 80, T2 phonemes mean 90 → gap negative → 100",
+          100,
+          r.dimensions.sentenceStability,
+        );
+      })();
+
+      (function tc_stability_positiveGap() {
+        // T1 phonemes mean 90, T2 phonemes mean 80 → gap 10 → 100 - 10*3 = 70
+        const s = blankSession();
+        s.task1.results = [{
+          word_id: "w_a", word: "ship", target_sound: "SH", syllables: 1, stress_pattern: [1],
+          azure: makePaEnvelope({ accuracy: 90, pron: 90,
+            words: [makeWord("ship", 90, [["sh", 90], ["ih", 90], ["p", 90]])],
+          }),
+        }];
+        s.task2.results = [{
+          item_id: "s_1", item_type: "sentence", text: "She is tall.",
+          azure: makePaEnvelope({ accuracy: 80, pron: 80,
+            words: [makeWord("she", 80, [["sh", 80], ["iy", 80]])],
+          }),
+        }];
+        const r = Scoring.compute(s);
+        test(
+          "Sentence stability (T1>T2)",
+          "T1 mean 90, T2 mean 80 → gap 10 × 3 = 30 deduction → 70",
+          70,
+          r.dimensions.sentenceStability,
+        );
+      })();
+
+      // TC5 — Consistency: stdDev of Task 1 item phoneme averages.
+      (function tc_consistency() {
+        // Item averages [80, 100] → stdDev (population) = 10. 100 - 10*3 = 70.
+        const s = blankSession();
+        s.task1.results = [
+          {
+            word_id: "w_a", word: "alpha", target_sound: "A", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 80, pron: 80,
+              words: [makeWord("alpha", 80, [["a", 80]])],
+            }),
+          },
+          {
+            word_id: "w_b", word: "beta", target_sound: "B", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 100, pron: 100,
+              words: [makeWord("beta", 100, [["b", 100]])],
+            }),
+          },
+        ];
+        const r = Scoring.compute(s);
+        test(
+          "Consistency",
+          "Task 1 item phoneme avgs [80, 100] → stdDev 10 × 3 = 30 deduction → 70",
+          70,
+          r.dimensions.consistency,
+        );
+      })();
+
+      // TC6 — Composite: weighted sum across all 5 dimensions.
+      (function tc_composite() {
+        // Build a tiny but complete session, predict overall.
+        const s = blankSession();
+        // Task 1: two words. Per-phoneme scores all = 90 → phoneme dim 90.
+        s.task1.results = [
+          {
+            word_id: "w_a", word: "alpha", target_sound: "A", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 90, pron: 90,
+              words: [makeWord("alpha", 90, [["a", 90]])],
+            }),
+          },
+          {
+            word_id: "w_b", word: "beta", target_sound: "B", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 90, pron: 90,
+              words: [makeWord("beta", 90, [["b", 90]])],
+            }),
+          },
+        ];
+        // Task 2: two sentences. Phonemes all 90, fluency 90. Sentence stability 100 (no gap).
+        s.task2.results = [
+          {
+            item_id: "s_1", item_type: "sentence", text: "She is tall.",
+            azure: makePaEnvelope({ accuracy: 90, fluency: 90, pron: 90,
+              words: [makeWord("she", 90, [["sh", 90]]), makeWord("is", 90, [["ih", 90]])],
+            }),
+          },
+          {
+            item_id: "s_2", item_type: "sentence", text: "I am here.",
+            azure: makePaEnvelope({ accuracy: 90, fluency: 90, pron: 90,
+              words: [makeWord("I", 90, [["ay", 90]]), makeWord("am", 90, [["a", 90]])],
+            }),
+          },
+        ];
+        const r = Scoring.compute(s);
+        // All 5 dims should land on 90 (or thereabouts):
+        //   phoneme = 90, fluency = 90, stress = 90 (single-syl path),
+        //   sentenceStability = 100 (no gap), consistency = 100 (stdDev 0)
+        // Composite = (90×0.25 + 90×0.22 + 90×0.18 + 100×0.18 + 100×0.17)
+        //           = 22.5 + 19.8 + 16.2 + 18 + 17 = 93.5 → rounds to 94
+        test(
+          "Composite (overall)",
+          "phoneme 90, fluency 90, stress 90, consistency 100, sentenceStability 100",
+          94,
+          r.overall,
+          { tol: 1 },
+        );
+      })();
+
+      // TC7 — scoreClass thresholds.
+      (function tc_scoreClass() {
+        test("scoreClass(90)", "≥85 → score-high", "score-high", Scoring.scoreClass(90));
+        test("scoreClass(70)", "65–84 → score-mid", "score-mid", Scoring.scoreClass(70));
+        test("scoreClass(50)", "<65 → score-low", "score-low", Scoring.scoreClass(50));
+        test("scoreClass(null)", "null → score-na", "score-na", Scoring.scoreClass(null));
+      })();
+
+      // TC8 — bandLabel thresholds.
+      (function tc_bandLabel() {
+        test("bandLabel(90)", "Top band", "Clear and confident", Scoring.bandLabel(90));
+        test("bandLabel(75)", "Mid-high", "Generally clear, some patterns to refine", Scoring.bandLabel(75));
+        test("bandLabel(60)", "Mid", "Comprehensible but inconsistent", Scoring.bandLabel(60));
+        test("bandLabel(45)", "Low-mid", "Listener has to work to follow", Scoring.bandLabel(45));
+        test("bandLabel(20)", "Bottom", "Difficult for a listener to follow", Scoring.bandLabel(20));
+        test("bandLabel(null)", "Empty", "—", Scoring.bandLabel(null));
+      })();
+
+      // TC9 — Section scores: Task 1 averages word-level AccuracyScore.
+      (function tc_sectionTask1() {
+        const s = blankSession();
+        s.task1.results = [
+          { word_id: "w_a", word: "a", target_sound: "A", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 80, pron: 80,
+              words: [makeWord("a", 80, [["a", 80]])],
+            }),
+          },
+          { word_id: "w_b", word: "b", target_sound: "B", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 100, pron: 100,
+              words: [makeWord("b", 100, [["b", 100]])],
+            }),
+          },
+        ];
+        const r = Scoring.compute(s);
+        test(
+          "Section: Single words",
+          "Task 1 word-level accuracies [80, 100] → mean 90",
+          90,
+          r.sectionScores.task1,
+        );
+      })();
+
+      // TC10 — Strengths: words where every phoneme ≥ 85 AND word-level ≥ 85.
+      (function tc_strengths() {
+        const s = blankSession();
+        s.data.words = [
+          { id: "w_a", ipa: "/eɪ/" },
+          { id: "w_b", ipa: "/biː/" },
+        ];
+        s.task1.results = [
+          // All phonemes ≥85, word-level ≥85 → strength
+          { word_id: "w_a", word: "alpha", target_sound: "A", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 95, pron: 95,
+              words: [makeWord("alpha", 95, [["a", 90], ["l", 95]])],
+            }),
+          },
+          // One phoneme < 85 → not a strength
+          { word_id: "w_b", word: "beta", target_sound: "B", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 80, pron: 80,
+              words: [makeWord("beta", 80, [["b", 70], ["iy", 90]])],
+            }),
+          },
+        ];
+        const r = Scoring.compute(s);
+        test(
+          "Strengths",
+          "Word A all phonemes ≥85, B has one <85 → only A returned",
+          ["alpha"],
+          r.strengths.map((x) => x.word),
+        );
+      })();
+
+      // TC11 — Focus area grouping with phoneme labels.
+      (function tc_focusGrouping() {
+        const s = blankSession();
+        s.data.tips = {
+          TH: { label: "TH (voiceless)", example_word: "think", tip: "Stick your tongue out a bit." },
+        };
+        s.task1.results = [
+          // bath — TH phoneme scoring 60 → focus area
+          { word_id: "w_bath", word: "bath", target_sound: "TH", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 70, pron: 70,
+              words: [makeWord("bath", 70, [["b", 90], ["a", 80], ["th", 60]])],
+            }),
+          },
+          // moth — TH phoneme scoring 65 → same group
+          { word_id: "w_moth", word: "moth", target_sound: "TH", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 75, pron: 75,
+              words: [makeWord("moth", 75, [["m", 90], ["o", 90], ["th", 65]])],
+            }),
+          },
+        ];
+        const r = Scoring.compute(s);
+        test(
+          "Focus areas — single group from labels",
+          "Two words with TH < 80 → 1 group, both words listed",
+          1,
+          r.focusAreas.length,
+        );
+        test(
+          "Focus areas — group code",
+          "Phoneme labels uppercased: 'th' → 'TH'",
+          "TH",
+          r.focusAreas[0] && r.focusAreas[0].code,
+        );
+        test(
+          "Focus areas — example words",
+          "Both words present, sorted by score ascending",
+          ["bath", "moth"],
+          r.focusAreas[0].examples.map((e) => e.word),
+        );
+        test(
+          "Focus areas — tip lookup",
+          "Tip pulled from phoneme_tips.json by code",
+          "Stick your tongue out a bit.",
+          r.focusAreas[0] && r.focusAreas[0].tip,
+        );
+      })();
+
+      // TC12 — Empty Phoneme labels: scoring falls back to target_sound.
+      (function tc_focusFallback() {
+        // Reproduces the bug we found in aze-session-1777631870283.json: every
+        // Phoneme string is "" because the SDK didn't get phonemeAlphabet set.
+        const s = blankSession();
+        s.data.tips = { UW: { label: "UW (long oo)", example_word: "food", tip: "Round your lips." } };
+        s.task1.results = [{
+          word_id: "w_food", word: "food", target_sound: "UW", syllables: 1, stress_pattern: [1],
+          azure: makePaEnvelope({ accuracy: 63, pron: 60,
+            words: [makeWord("food", 63, [["", 100], ["", 70], ["", 100]])],
+          }),
+        }];
+        const r = Scoring.compute(s);
+        test(
+          "Focus areas — fallback to target_sound",
+          "Empty phoneme labels → group by word.target_sound, score = word-level accuracy",
+          "UW",
+          r.focusAreas[0] && r.focusAreas[0].code,
+        );
+        test(
+          "Focus areas — fallback score is word-level",
+          "When labels missing, group score = word-level AccuracyScore",
+          63,
+          r.focusAreas[0] && r.focusAreas[0].avg,
+        );
+      })();
+
+      // TC13 — Empty session: all dims null, overall null.
+      (function tc_empty() {
+        const r = Scoring.compute(blankSession());
+        test("Empty session — overall", "No data → null", null, r.overall);
+        test("Empty session — phoneme dim", "No data → null", null, r.dimensions.phoneme);
+        test("Empty session — fluency dim", "No data → null", null, r.dimensions.fluency);
+        test("Empty session — band", "No data → '—'", "—", r.band);
+      })();
+
+      // TC14 — Task 4 low-confidence: PA result is null, must NOT count toward dims.
+      (function tc_lowConfidence() {
+        const s = blankSession();
+        s.task4.results = [{
+          prompt_id: "q_1", prompt_kind: "question", prompt_text: "Hello?",
+          azure: { transcript: "uh", confidence: 0.05, lowConfidence: true, paResult: null },
+        }];
+        const r = Scoring.compute(s);
+        test(
+          "Task 4 low-confidence",
+          "Low-confidence response → ignored by all dimensions",
+          null,
+          r.dimensions.phoneme,
+        );
+      })();
+
+      flushTests();
+
+      // =========================================================================
+      // Live session loader
+      // =========================================================================
+
+      const liveOutput = document.getElementById("liveOutput");
+
+      // Mockup-derived expected values (small differences are fine — these are
+      // estimates and the real engine is the source of truth).
+      const MOCKUP_EXPECT = {
+        overall: 85,
+        dimensions: { phoneme: 89, fluency: 94, stress: 85, consistency: 54, sentenceStability: 100 },
+        sectionScores: { task1: 81, task2: 97, task3Heard: 88, task3Said: 98, task4: null },
+        strengthsCount: 5,
+        focusAreas: ["TH", "UW", "Z", "EH"],
+      };
+
+      function within(actual, expected, tol = 5) {
+        if (actual == null && expected == null) return true;
+        if (actual == null || expected == null) return false;
+        return Math.abs(actual - expected) <= tol;
+      }
+
+      function classify(score) {
+        if (typeof score !== "number") return "na";
+        if (score >= 85) return "high";
+        if (score >= 65) return "mid";
+        return "low";
+      }
+
+      function statCard(label, score, sub) {
+        const cls = classify(score);
+        const val = score == null ? "—" : score;
+        return `
+          <div class="stat-card">
+            <div class="lbl">${escapeHtml(label)}</div>
+            <div class="val ${cls}">${escapeHtml(val)}</div>
+            ${sub ? `<div class="sub">${sub}</div>` : ""}
+          </div>
+        `;
+      }
+
+      function renderLive(report, source) {
+        const dims = report.dimensions;
+        const sec = report.sectionScores;
+        const me = MOCKUP_EXPECT;
+
+        const dimRows = [
+          ["overall", "Overall", report.overall, me.overall, 8],
+          ["phoneme", "Phoneme accuracy", dims.phoneme, me.dimensions.phoneme, 10],
+          ["fluency", "Fluency", dims.fluency, me.dimensions.fluency, 10],
+          ["stress", "Word stress", dims.stress, me.dimensions.stress, 12],
+          ["consistency", "Consistency", dims.consistency, me.dimensions.consistency, 35],
+          ["sentenceStability", "Sentence stability", dims.sentenceStability, me.dimensions.sentenceStability, 5],
+        ].map(([key, label, actual, expected, tol]) => {
+          const ok = within(actual, expected, tol);
+          return `
+            <tr>
+              <td>${escapeHtml(label)}</td>
+              <td class="muted">±${tol}</td>
+              <td class="expected">~${expected}</td>
+              <td class="actual">${escapeHtml(actual == null ? "—" : actual)}</td>
+              <td class="status ${ok ? "pass" : "fail"}">${ok ? "PASS" : "FAIL"}</td>
+            </tr>
+          `;
+        }).join("");
+
+        const focusOverlap = report.focusAreas.filter((g) => me.focusAreas.includes(g.code)).map((g) => g.code);
+        const focusOK = focusOverlap.length >= 3; // at least 3 of the 4 mockup phonemes appear
+
+        const focusRows = report.focusAreas.map((g) => `
+          <div class="focus-row">
+            <span class="code">${escapeHtml(g.code)}</span>
+            <span class="label">— ${escapeHtml(g.label)}</span>
+            (avg ${escapeHtml(g.avg)})
+            <div class="ex">${g.examples.map((ex) => `${escapeHtml(ex.word)} (${escapeHtml(ex.score)})`).join(", ")}</div>
+          </div>
+        `).join("");
+
+        liveOutput.innerHTML = `
+          <div class="live-panel">
+            <div class="muted">Source: ${escapeHtml(source)} · seed shown in counts</div>
+            <div class="live-grid">
+              ${statCard("Overall", report.overall, escapeHtml(report.band))}
+              ${statCard("Phoneme", dims.phoneme)}
+              ${statCard("Fluency", dims.fluency)}
+              ${statCard("Stress", dims.stress)}
+              ${statCard("Consistency", dims.consistency)}
+              ${statCard("Stability", dims.sentenceStability)}
+            </div>
+
+            <h3 style="font-size:14px; margin: 12px 0 6px; color:#4b5563;">Section scores</h3>
+            <div class="live-grid">
+              ${statCard("Task 1 — Words", sec.task1, `${report.counts.task1} items`)}
+              ${statCard("Task 2 — Sentences", sec.task2, `${report.counts.task2} items`)}
+              ${statCard("Task 3 — Heard", sec.task3Heard, `${report.perception.correct}/${report.perception.total} right`)}
+              ${statCard("Task 3 — Said", sec.task3Said, `${report.counts.task3} repeats`)}
+              ${statCard("Task 4 — Free", sec.task4, `${report.counts.task4} prompts`)}
+            </div>
+          </div>
+
+          <div class="live-panel">
+            <h3 style="font-size:14px; margin: 0 0 10px; color:#4b5563;">vs mockup expectations</h3>
+            <table>
+              <thead><tr><th>Dimension</th><th>Tolerance</th><th>Expected</th><th>Actual</th><th>Result</th></tr></thead>
+              <tbody>${dimRows}</tbody>
+            </table>
+          </div>
+
+          <div class="live-panel">
+            <h3 style="font-size:14px; margin: 0 0 4px; color:#4b5563;">Focus areas (engine output)</h3>
+            <p class="muted" style="margin: 0 0 10px;">
+              Mockup expected at least 3 of: <strong>${me.focusAreas.join(", ")}</strong> · overlap: <strong>${focusOverlap.join(", ") || "—"}</strong> ·
+              <span class="${focusOK ? "high" : "low"}" style="font-weight:600">${focusOK ? "PASS" : "FAIL"}</span>
+            </p>
+            ${focusRows || `<p class="muted">No focus groups produced.</p>`}
+          </div>
+
+          <div class="live-panel">
+            <h3 style="font-size:14px; margin: 0 0 6px; color:#4b5563;">Strengths (count: ${report.strengths.length})</h3>
+            ${report.strengths.map((s) => `<span class="chip">${escapeHtml(s.word)}</span>`).join("") || `<p class="muted">None this session.</p>`}
+          </div>
+
+          <details>
+            <summary>Full report JSON</summary>
+            <pre class="json">${escapeHtml(JSON.stringify(report, null, 2))}</pre>
+          </details>
+
+          <details>
+            <summary>Diagnostics</summary>
+            <pre class="json">${escapeHtml(JSON.stringify(report.diagnostics, null, 2))}</pre>
+          </details>
+        `;
+      }
+
+      function loadSessionFromText(text, sourceLabel) {
+        let session;
+        try {
+          session = JSON.parse(text);
+        } catch (e) {
+          liveOutput.innerHTML = `<div class="live-panel"><strong>Parse error:</strong> ${escapeHtml(e.message)}</div>`;
+          return;
+        }
+        // The dump strips wavBlob and pendingAzure but keeps r.azure as-is.
+        // scoring.js doesn't need those, so this is fine. We do need to make
+        // sure session.data has at least empty maps so the renderer doesn't
+        // throw — this test page doesn't load the bank JSONs.
+        if (!session.data) session.data = {};
+        if (!session.data.tips) session.data.tips = {};
+        if (!session.data.words) session.data.words = [];
+        if (!session.data.pairs) session.data.pairs = [];
+
+        const report = Scoring.compute(session);
+        renderLive(report, sourceLabel);
+      }
+
+      document.getElementById("fileInput").addEventListener("change", (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => loadSessionFromText(String(reader.result), file.name);
+        reader.readAsText(file);
+      });
+
+      document.getElementById("loadDefault").addEventListener("click", async () => {
+        try {
+          const r = await fetch("aze-session.json", { cache: "no-store" });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const text = await r.text();
+          loadSessionFromText(text, "./aze-session.json");
+        } catch (e) {
+          liveOutput.innerHTML = `<div class="live-panel">No <code>aze-session.json</code> found next to <code>scoring.test.html</code>. Drop a session dump there or use the file picker.</div>`;
+        }
+      });
+    </script>
+  </body>
+</html>
