@@ -19,8 +19,8 @@
 // =============================================================================
 
 const __cfg = (typeof window !== "undefined" && window.AZE_CONFIG) || {};
-const AZURE_KEY = __cfg.AZURE_KEY || "";
-const AZURE_REGION = __cfg.AZURE_REGION || "";
+const AZURE_KEY = __cfg.AZURE_KEY || "6SyJSlI2UxE5RbRGEyj1oDnJCdppCcY63ir0PwRmOdR5sAOQUi5OJQQJ99CEACYeBjFXJ3w3AAAYACOGToIT";
+const AZURE_REGION = __cfg.AZURE_REGION || "eastus";
 
 // =============================================================================
 // 2. Locale + voice (en-GB throughout for v1)
