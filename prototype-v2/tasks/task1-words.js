@@ -237,8 +237,17 @@
           recCtrl = null;
           if (disposed) return;
           if (!isPractice) {
-            const pendingAzure = AzureSpeech.scorePronunciation(result.wavBlob, word.word)
-              .catch((err) => ({ error: true, message: err && err.message || String(err) }));
+            // Prosody assessment is disabled for Task 1: isolated single words
+            // have no rhythm to assess, so Azure returns ProsodyScore=0, which
+            // deflates word-level AccuracyScore (e.g. "necessary" coming back
+            // as 62 even though phonemes averaged 86). With prosody off, the
+            // word-level number tracks the phoneme mean as Azure documents.
+            // Tasks 2/3/4 keep prosody enabled — they're sentence-level.
+            const pendingAzure = AzureSpeech.scorePronunciation(
+              result.wavBlob,
+              word.word,
+              { enableProsody: false }
+            ).catch((err) => ({ error: true, message: err && err.message || String(err) }));
 
             session.task1.results.push({
               word_id: word.id,

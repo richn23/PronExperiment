@@ -600,20 +600,24 @@
         );
       })();
 
-      // TC11 — Focus area grouping with phoneme labels.
+      // TC11 — Focus area grouping by individual phoneme score, not lowest-per-word.
+      // Threshold is FOCUS_PHONEME_THRESHOLD (70). Every phoneme < 70 contributes
+      // to its group. Words appear in a group if any of their phoneme instances
+      // for that code scored low; their displayed score is the lowest such instance.
       (function tc_focusGrouping() {
         const s = blankSession();
         s.data.tips = {
           TH: { label: "TH (voiceless)", example_word: "think", tip: "Stick your tongue out a bit." },
+          B: { label: "B", example_word: "bath", tip: "Press lips together." },
         };
         s.task1.results = [
-          // bath — TH phoneme scoring 60 → focus area
+          // bath — TH=60 (<70 → flagged), B=90 (>=70 → not flagged)
           { word_id: "w_bath", word: "bath", target_sound: "TH", syllables: 1, stress_pattern: [1],
             azure: makePaEnvelope({ accuracy: 70, pron: 70,
               words: [makeWord("bath", 70, [["b", 90], ["a", 80], ["th", 60]])],
             }),
           },
-          // moth — TH phoneme scoring 65 → same group
+          // moth — TH=65 (<70 → flagged), M=90 (>=70 → not flagged)
           { word_id: "w_moth", word: "moth", target_sound: "TH", syllables: 1, stress_pattern: [1],
             azure: makePaEnvelope({ accuracy: 75, pron: 75,
               words: [makeWord("moth", 75, [["m", 90], ["o", 90], ["th", 65]])],
@@ -622,8 +626,8 @@
         ];
         const r = Scoring.compute(s);
         test(
-          "Focus areas — single group from labels",
-          "Two words with TH < 80 → 1 group, both words listed",
+          "Focus areas — only TH flagged",
+          "TH < 70 in both words; B and M >= 70 → 1 group only",
           1,
           r.focusAreas.length,
         );
@@ -634,25 +638,52 @@
           r.focusAreas[0] && r.focusAreas[0].code,
         );
         test(
-          "Focus areas — example words",
-          "Both words present, sorted by score ascending",
+          "Focus areas — example words sorted by score",
+          "Both words present, lowest score first",
           ["bath", "moth"],
           r.focusAreas[0].examples.map((e) => e.word),
         );
         test(
           "Focus areas — tip lookup",
-          "Tip pulled from phoneme_tips.json by code",
+          "Tip pulled from phoneme_tips.json by ARPABET code",
           "Stick your tongue out a bit.",
           r.focusAreas[0] && r.focusAreas[0].tip,
         );
+        test(
+          "Focus areas — phonemeLabelsAvailable",
+          "Labels present → flag is true",
+          true,
+          r.phonemeLabelsAvailable,
+        );
       })();
 
-      // TC12 — Empty Phoneme labels: scoring falls back to target_sound.
-      (function tc_focusFallback() {
-        // Reproduces the bug we found in aze-session-1777631870283.json: every
-        // Phoneme string is "" because the SDK didn't get phonemeAlphabet set.
+      // TC11b — A word with multiple low phonemes shows up in MULTIPLE groups
+      // (one per unique phoneme code <70). Within each group, the word is
+      // listed once, with the lowest score for that phoneme.
+      (function tc_focusMultipleLowPhonemes() {
         const s = blankSession();
-        s.data.tips = { UW: { label: "UW (long oo)", example_word: "food", tip: "Round your lips." } };
+        s.task1.results = [{
+          word_id: "w_x", word: "thirsty", target_sound: "TH", syllables: 2, stress_pattern: [1, 0],
+          azure: makePaEnvelope({ accuracy: 50, pron: 50,
+            words: [makeWord("thirsty", 50, [["th", 50], ["er", 60], ["s", 65], ["t", 90], ["iy", 95]])],
+          }),
+        }];
+        const r = Scoring.compute(s);
+        const codes = r.focusAreas.map((g) => g.code).sort();
+        test(
+          "Focus — three groups from one word",
+          "Phonemes TH(50), ER(60), S(65) all < 70 → three distinct groups",
+          ["ER", "S", "TH"],
+          codes,
+        );
+      })();
+
+      // TC12 — Phoneme labels empty across the session (the SDK config bug).
+      // No fallback to target_sound; groups stay empty and the diagnostic
+      // flag flips so the renderer can surface the issue.
+      (function tc_focusNoLabels() {
+        const s = blankSession();
+        s.data.tips = { UW: { label: "UW", example_word: "food", tip: "Round your lips." } };
         s.task1.results = [{
           word_id: "w_food", word: "food", target_sound: "UW", syllables: 1, stress_pattern: [1],
           azure: makePaEnvelope({ accuracy: 63, pron: 60,
@@ -661,16 +692,34 @@
         }];
         const r = Scoring.compute(s);
         test(
-          "Focus areas — fallback to target_sound",
-          "Empty phoneme labels → group by word.target_sound, score = word-level accuracy",
-          "UW",
-          r.focusAreas[0] && r.focusAreas[0].code,
+          "Focus areas — empty labels = no groups",
+          "Every Phoneme:'' → groups must be empty (no target_sound fallback)",
+          0,
+          r.focusAreas.length,
         );
         test(
-          "Focus areas — fallback score is word-level",
-          "When labels missing, group score = word-level AccuracyScore",
-          63,
-          r.focusAreas[0] && r.focusAreas[0].avg,
+          "Focus areas — phonemeLabelsAvailable false",
+          "Every label empty → flag false so renderer shows diagnostic",
+          false,
+          r.phonemeLabelsAvailable,
+        );
+      })();
+
+      // TC12b — Threshold edge: 70 is NOT flagged (strictly less than).
+      (function tc_focusThresholdEdge() {
+        const s = blankSession();
+        s.task1.results = [{
+          word_id: "w_x", word: "ship", target_sound: "SH", syllables: 1, stress_pattern: [1],
+          azure: makePaEnvelope({ accuracy: 70, pron: 70,
+            words: [makeWord("ship", 70, [["sh", 70], ["ih", 69], ["p", 100]])],
+          }),
+        }];
+        const r = Scoring.compute(s);
+        test(
+          "Focus — exactly 70 not flagged",
+          "SH=70 (not <70), IH=69 (<70) → only IH group",
+          ["IH"],
+          r.focusAreas.map((g) => g.code),
         );
       })();
 
@@ -697,6 +746,235 @@
           null,
           r.dimensions.phoneme,
         );
+      })();
+
+      // =========================================================================
+      // Silent-input scoring guard
+      //
+      // Reproduces the bug we hit on aze-session-1777636010983.json: 13 of 15
+      // Task 1 words came back as "." (Azure recognised silence, returned
+      // RecognitionStatus=Success with text="."), 2 had hallucinated low-
+      // confidence recognition from background noise. The old engine averaged
+      // only the 2 false positives and produced a misleading "62". The new
+      // engine should flag the task and suppress the score entirely.
+      // =========================================================================
+
+      // A silent envelope as Azure actually returns it: status Success, text
+      // is ".", confidence 0, PronScore 0, Words[] empty.
+      function makeSilentEnvelope(refText) {
+        return {
+          text: ".",
+          reason: 3,
+          reasonName: "RecognizedSpeech",
+          json: {
+            RecognitionStatus: "Success",
+            DisplayText: ".",
+            NBest: [{
+              Confidence: 0,
+              Lexical: ".",
+              PronunciationAssessment: {
+                AccuracyScore: 0, FluencyScore: 0, ProsodyScore: 0,
+                CompletenessScore: 100, PronScore: 0,
+              },
+              Words: [],
+            }],
+          },
+          referenceText: refText,
+        };
+      }
+
+      // A noise-hallucination envelope: Azure recognised something but
+      // confidence is below MIN_CONFIDENCE — the "Bath. (52.6)" case.
+      function makeNoiseEnvelope(word, accuracy, confidence) {
+        return {
+          text: word.charAt(0).toUpperCase() + word.slice(1) + ".",
+          reason: 3,
+          reasonName: "RecognizedSpeech",
+          json: {
+            RecognitionStatus: "Success",
+            DisplayText: word + ".",
+            NBest: [{
+              Confidence: confidence,
+              Lexical: word,
+              PronunciationAssessment: {
+                AccuracyScore: accuracy, PronScore: accuracy,
+              },
+              Words: [makeWord(word, accuracy, [[word.charAt(0), accuracy]])],
+            }],
+          },
+          referenceText: word,
+        };
+      }
+
+      // TC15 — isUnscored detects each silence signal individually.
+      (function tc_isUnscored() {
+        test("isUnscored — silent (.) text", "Azure returns text='.' → unscored",
+          true, Scoring.isUnscored(makeSilentEnvelope("gold")));
+        test("isUnscored — empty text", "text='' → unscored",
+          true, Scoring.isUnscored({ text: "", json: { RecognitionStatus: "Success" } }));
+        test("isUnscored — RecognitionStatus failure", "Status='InitialSilenceTimeout' → unscored",
+          true, Scoring.isUnscored({ text: "x", json: { RecognitionStatus: "InitialSilenceTimeout", NBest: [{ Confidence: 0.9 }] } }));
+        test("isUnscored — low confidence noise", "Confidence 0.2 < 0.3 → unscored",
+          true, Scoring.isUnscored(makeNoiseEnvelope("bath", 50, 0.2)));
+        test("isUnscored — error envelope", "{ error: true } → unscored",
+          true, Scoring.isUnscored({ error: true, message: "boom" }));
+        test("isUnscored — clean usable", "Real recognition, confidence 0.9 → scored",
+          false, Scoring.isUnscored(makePaEnvelope({
+            accuracy: 90, pron: 90,
+            words: [makeWord("alpha", 90, [["a", 90]])],
+          })));
+      })();
+
+      // TC16 — Per-task quality flag: 2/15 items above threshold should NOT
+      // flag (still a usable section); 13/15 below threshold SHOULD flag.
+      (function tc_taskQuality_threshold() {
+        // Build T1 with 2 usable + 13 silent (bad-session shape) → 13/15 = 87% unscored.
+        const badT1 = [];
+        for (let i = 0; i < 13; i++) {
+          badT1.push({
+            word_id: `silent_${i}`, word: "x", target_sound: "X", syllables: 1, stress_pattern: [1],
+            azure: makeSilentEnvelope("x"),
+          });
+        }
+        for (let i = 0; i < 2; i++) {
+          badT1.push({
+            word_id: `usable_${i}`, word: "alpha", target_sound: "A", syllables: 1, stress_pattern: [1],
+            azure: makePaEnvelope({ accuracy: 80, pron: 80,
+              words: [makeWord("alpha", 80, [["a", 80]])],
+            }),
+          });
+        }
+        test("taskQuality — flagged at 13/15 unscored", "Threshold 25% → 87% > 25% → flagged",
+          true, Scoring.taskQuality(badT1).flagged);
+
+        // 4/15 unscored = 27% — just over threshold, should flag.
+        const borderline = [];
+        for (let i = 0; i < 4; i++) borderline.push({ word: "x", azure: makeSilentEnvelope("x") });
+        for (let i = 0; i < 11; i++) borderline.push({ word: "ok",
+          azure: makePaEnvelope({ accuracy: 80, pron: 80,
+            words: [makeWord("ok", 80, [["o", 80]])] }) });
+        test("taskQuality — flagged at 4/15 unscored", "27% > 25% → flagged",
+          true, Scoring.taskQuality(borderline).flagged);
+
+        // 3/15 unscored = 20%, under threshold, should NOT flag.
+        const okay = [];
+        for (let i = 0; i < 3; i++) okay.push({ word: "x", azure: makeSilentEnvelope("x") });
+        for (let i = 0; i < 12; i++) okay.push({ word: "ok",
+          azure: makePaEnvelope({ accuracy: 80, pron: 80,
+            words: [makeWord("ok", 80, [["o", 80]])] }) });
+        test("taskQuality — clean at 3/15 unscored", "20% ≤ 25% → not flagged",
+          false, Scoring.taskQuality(okay).flagged);
+      })();
+
+      // TC17 — Whole-session flagging mirrors aze-session-1777636010983.json,
+      // the real-world session that motivated this guard. Task 1 had 13 items
+      // returning "." (Azure-detected silence) and 2 with hallucinated noise
+      // recognition at confidence ~0.39 (above MIN_CONFIDENCE, so they stay
+      // "scored" but unreliable — exactly the false-positive pattern that
+      // produced the misleading "62" before this guard.) The other tasks were
+      // entirely silent. Every task should be flagged → sessionFlagged true.
+      (function tc_sessionFlagged() {
+        const s = blankSession();
+        // Task 1 — 13 silent items + 2 noise hallucinations (Azure heard a faint
+        // sound, recognition stayed above MIN_CONFIDENCE but PronScore was low).
+        for (let i = 0; i < 13; i++) {
+          s.task1.results.push({
+            word_id: `s${i}`, word: "x", target_sound: "X", syllables: 1, stress_pattern: [1],
+            azure: makeSilentEnvelope("x"),
+          });
+        }
+        s.task1.results.push({
+          word_id: "n1", word: "bath", target_sound: "TH", syllables: 1, stress_pattern: [1],
+          azure: makeNoiseEnvelope("bath", 52, 0.39),
+        });
+        s.task1.results.push({
+          word_id: "n2", word: "think", target_sound: "TH", syllables: 1, stress_pattern: [1],
+          azure: makeNoiseEnvelope("think", 60, 0.4),
+        });
+        // Task 2 — all silent
+        for (let i = 0; i < 6; i++) {
+          s.task2.results.push({ item_id: `s${i}`, item_type: "sentence", text: "x", azure: makeSilentEnvelope("x") });
+        }
+        // Task 3 — all silent (perception button-taps still recorded)
+        for (let i = 0; i < 8; i++) {
+          s.task3.results.push({
+            pair_id: `p${i}`, contrast: "TH/S", heardWord: "think", target_word: "think",
+            round1_correct: i % 2 === 0,
+            azure: makeSilentEnvelope("think"),
+          });
+        }
+        // Task 4 — all silent
+        for (let i = 0; i < 3; i++) {
+          s.task4.results.push({
+            prompt_id: `q${i}`, prompt_kind: "question", prompt_text: "Tell me…",
+            azure: { transcript: ".", confidence: 0, lowConfidence: false, paResult: null },
+          });
+        }
+
+        const r = Scoring.compute(s);
+
+        test("Bad session — sessionFlagged", "Every task >25% unscored → sessionFlagged true",
+          true, r.sessionFlagged);
+        test("Bad session — overall suppressed", "sessionFlagged → overall must be null (was misleading 62 pre-fix)",
+          null, r.overall);
+        test("Bad session — band message", "Header text replaces band label",
+          "Session not scored — recording issues", r.band);
+        test("Bad session — Task 1 flagged", "13/15 unscored = 87% > 25% → flagged",
+          true, r.qualityFlags.task1.flagged);
+        test("Bad session — Task 1 unscored count", "13 silent items detected (2 noise items above MIN_CONFIDENCE survive)",
+          13, r.qualityFlags.task1.unscored);
+        test("Bad session — Task 1 NOT scored as 62", "Section score must be null, not the bug's misleading number",
+          null, r.sectionScores.task1);
+        test("Bad session — phoneme dim suppressed", "Flagged tasks contribute nothing → null",
+          null, r.dimensions.phoneme);
+        test("Bad session — stress dim suppressed", "T1 flagged → stress null",
+          null, r.dimensions.stress);
+        test("Bad session — strengths empty", "T1 flagged → no strengths surfaced",
+          0, r.strengths.length);
+        test("Bad session — focus areas empty", "T1 flagged → no focus areas surfaced",
+          0, r.focusAreas.length);
+        test("Bad session — Task 3 Heard preserved", "Perception is button-tap, recording-independent",
+          50, r.sectionScores.task3Heard);
+        test("Bad session — unscored total", "30 silent items across the session (13+6+8+3, the 2 noise items stay scored)",
+          30, r.unscoredTotal);
+      })();
+
+      // TC18 — Mixed quality: T1 flagged, T2/T3/T4 clean. Overall still scores
+      // off the unflagged tasks; T1 dimensions go null, others stand.
+      (function tc_partialFlag() {
+        const s = blankSession();
+        for (let i = 0; i < 13; i++) {
+          s.task1.results.push({
+            word_id: `s${i}`, word: "x", target_sound: "X", syllables: 1, stress_pattern: [1],
+            azure: makeSilentEnvelope("x"),
+          });
+        }
+        s.task1.results.push({
+          word_id: "ok", word: "alpha", target_sound: "A", syllables: 1, stress_pattern: [1],
+          azure: makePaEnvelope({ accuracy: 90, pron: 90,
+            words: [makeWord("alpha", 90, [["a", 90]])] }),
+        });
+        s.task2.results.push({
+          item_id: "s_1", item_type: "sentence", text: "She is tall.",
+          azure: makePaEnvelope({ accuracy: 90, fluency: 90, pron: 90,
+            words: [makeWord("she", 90, [["sh", 90]])] }),
+        });
+
+        const r = Scoring.compute(s);
+        test("Partial flag — sessionFlagged false", "T2 clean → session not flagged",
+          false, r.sessionFlagged);
+        test("Partial flag — T1 still flagged", "13/14 unscored",
+          true, r.qualityFlags.task1.flagged);
+        test("Partial flag — T2 not flagged", "1/1 usable",
+          false, r.qualityFlags.task2.flagged);
+        test("Partial flag — Task 1 section null", "T1 flagged → section score suppressed",
+          null, r.sectionScores.task1);
+        test("Partial flag — stress dim null", "T1-only dim, T1 flagged → null",
+          null, r.dimensions.stress);
+        test("Partial flag — sentenceStability null", "Needs T1; T1 flagged → null",
+          null, r.dimensions.sentenceStability);
+        test("Partial flag — fluency intact", "T2 clean → fluency comes through",
+          90, r.dimensions.fluency);
       })();
 
       flushTests();
@@ -746,6 +1024,27 @@
         const dims = report.dimensions;
         const sec = report.sectionScores;
         const me = MOCKUP_EXPECT;
+        const qf = report.qualityFlags || {};
+
+        const flaggedBanner = report.sessionFlagged
+          ? `<div class="live-panel" style="background:#fef2f2; border-color:#fecaca; color:#991b1b;">
+               <strong>Session flagged.</strong> ${report.unscoredTotal} of ${report.itemsTotal} items unscored — overall score suppressed. Header reads: "${escapeHtml(report.band)}".
+             </div>`
+          : "";
+
+        function qfCell(key, label) {
+          const f = qf[key] || { total: 0, unscored: 0, flagged: false };
+          const pct = f.total ? Math.round(100 * f.unscored / f.total) : 0;
+          const cls = f.flagged ? "low" : (f.unscored > 0 ? "mid" : "high");
+          const sub = f.flagged ? `${pct}% unscored — flagged` : (f.unscored > 0 ? `${pct}% unscored` : "all usable");
+          return `
+            <div class="stat-card">
+              <div class="lbl">${escapeHtml(label)}</div>
+              <div class="val ${cls}">${escapeHtml(f.unscored)}/${escapeHtml(f.total)}</div>
+              <div class="sub">${escapeHtml(sub)}</div>
+            </div>
+          `;
+        }
 
         const dimRows = [
           ["overall", "Overall", report.overall, me.overall, 8],
@@ -780,6 +1079,24 @@
         `).join("");
 
         liveOutput.innerHTML = `
+          ${flaggedBanner}
+          <div class="live-panel">
+            <h3 style="font-size:14px; margin: 0 0 6px; color:#4b5563;">Quality flags</h3>
+            <div class="live-grid">
+              ${qfCell("task1", "Task 1 — Words")}
+              ${qfCell("task2", "Task 2 — Sentences")}
+              ${qfCell("task3", "Task 3 — Pairs")}
+              ${qfCell("task4", "Task 4 — Free")}
+            </div>
+            <div class="muted">
+              ${report.sessionFlagged
+                ? `<strong>Session flagged.</strong> All non-empty tasks crossed the 25% unscored threshold. Overall score suppressed.`
+                : (report.unscoredTotal > 0
+                    ? `${report.unscoredTotal} of ${report.itemsTotal} items unscored across the session.`
+                    : `No unscored items detected.`)}
+            </div>
+          </div>
+
           <div class="live-panel">
             <div class="muted">Source: ${escapeHtml(source)} · seed shown in counts</div>
             <div class="live-grid">

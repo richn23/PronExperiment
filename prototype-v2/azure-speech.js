@@ -91,24 +91,39 @@ const AZURE_TTS_VOICE = __cfg.AZURE_TTS_VOICE || "en-GB-RyanNeural"; // swap to 
     const audioConfig = SDK.AudioConfig.fromWavFileInput(blobToWavFile(wavBlob));
     const recognizer = new SDK.SpeechRecognizer(speechConfig, audioConfig);
 
-    const pronunciationConfig = new SDK.PronunciationAssessmentConfig(
-      referenceText,
-      SDK.PronunciationAssessmentGradingSystem.HundredMark,
-      SDK.PronunciationAssessmentGranularity.Phoneme,
-      true // enable miscue
+    // Build the PA config via fromJSON. The constructor + property-setter path
+    // we used previously left phonemeAlphabet on the JS object but never sent
+    // it to the wire — every Phoneme/Syllable string came back empty, which
+    // broke the focus-areas grouping. fromJSON serialises the full block as
+    // documented and reliably produces populated labels.
+    //
+    // Using SAPI gives lowercase ARPABET-style codes ("th", "ae", "iy") that
+    // match data/phoneme_tips.json keys after .toUpperCase().
+    const paJson = {
+      referenceText: referenceText,
+      gradingSystem: "HundredMark",
+      granularity: "Phoneme",
+      dimension: "Comprehensive",
+      enableMiscue: true,
+      phonemeAlphabet: "SAPI",
+    };
+    if (enableProsody) {
+      paJson.enableProsodyAssessment = true;
+    }
+    const pronunciationConfig = SDK.PronunciationAssessmentConfig.fromJSON(
+      JSON.stringify(paJson)
     );
 
-    // Phoneme alphabet — SAPI returns ARPABET-style lowercase codes ("th", "ae",
-    // "iy") that match data/phoneme_tips.json keys after .toUpperCase(). If
-    // omitted, recent SDK builds return empty Phoneme strings on the wire.
+    // Belt-and-braces: also set the property and call the method. fromJSON
+    // is the canonical path, but some SDK builds also need the post-hoc
+    // assignment to forward the alphabet to the wire format. Cheap to do.
     try { pronunciationConfig.phonemeAlphabet = "SAPI"; } catch (_) {}
-
-    // Prosody adds word-level prosody scoring (only on supported locales/voices).
-    // Safe to enable for en-GB; SDK ignores if unsupported.
-    if (enableProsody && typeof pronunciationConfig.enableProsodyAssessment === "function") {
-      try { pronunciationConfig.enableProsodyAssessment(); } catch (_) {}
-    } else if (enableProsody && "enableProsodyAssessment" in pronunciationConfig) {
-      try { pronunciationConfig.enableProsodyAssessment = true; } catch (_) {}
+    if (enableProsody) {
+      if (typeof pronunciationConfig.enableProsodyAssessment === "function") {
+        try { pronunciationConfig.enableProsodyAssessment(); } catch (_) {}
+      } else if ("enableProsodyAssessment" in pronunciationConfig) {
+        try { pronunciationConfig.enableProsodyAssessment = true; } catch (_) {}
+      }
     }
     pronunciationConfig.applyTo(recognizer);
 

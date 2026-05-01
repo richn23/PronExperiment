@@ -100,6 +100,12 @@
 
     const parts = [];
 
+    if (report.sessionFlagged) {
+      const u = report.unscoredTotal || 0;
+      const t = report.itemsTotal || 0;
+      return `Most of the recordings in this session had no clear speech detected (${u} of ${t} items unscored). The mic may have been muted or pointed away — try retaking the test in a quiet room with the mic close to you.`;
+    }
+
     if (overall == null) {
       return "We didn't capture enough usable data this session to compute a score. Try again in a quiet room.";
     }
@@ -137,6 +143,18 @@
   }
 
   function renderHero(report) {
+    if (report.sessionFlagged) {
+      return `
+        <div class="hero report-card flagged" style="background:#94a3b8;">
+          <div class="label">
+            Session not scored
+            <button class="info-btn" data-modal="how" title="How is this score calculated?" type="button">i</button>
+          </div>
+          <div class="band" style="margin-top:6px; font-size:18px;">Recording issues — most items had no clear speech</div>
+          <p class="summary">${esc(summaryNarrative(report))}</p>
+        </div>
+      `;
+    }
     const score = fmt(report.overall);
     const cls = Scoring.scoreClass(report.overall);
     return `
@@ -168,9 +186,31 @@
     `;
   }
 
-  function tileSplit(name, heard, said, desc) {
+  // Flagged variant — used when too many items in this task had no clear
+  // speech. We deliberately show no number, just an explanation, so the user
+  // doesn't read a misleading partial score (e.g. averaging 2 noise-driven
+  // false positives over 13 silent items).
+  function tileFlagged(name, qf) {
+    const total = qf.total || 0;
+    const unscored = qf.unscored || 0;
+    return `
+      <div class="section-tile flagged">
+        <div class="name">${esc(name)}</div>
+        <div class="score-num score-na">—</div>
+        <div class="desc"><strong>Couldn't score this section</strong> — ${unscored} of ${total} recordings had no clear speech detected. Please retake this part.</div>
+      </div>
+    `;
+  }
+
+  function tileSplit(name, heard, said, desc, saidFlagged) {
     const cH = Scoring.scoreClass(heard);
     const cS = Scoring.scoreClass(said);
+    const saidValue = saidFlagged
+      ? `<div class="val score-na" title="Recordings had no clear speech — couldn't score">—</div>`
+      : `<div class="val ${cS}">${esc(fmt(said))}</div>`;
+    const saidNote = saidFlagged
+      ? `<div class="desc" style="margin-top:6px;"><strong>Said:</strong> couldn't score — recordings unclear.</div>`
+      : "";
     return `
       <div class="section-tile">
         <div class="name">${esc(name)}</div>
@@ -181,10 +221,11 @@
           </div>
           <div class="col">
             <div class="lbl">Said</div>
-            <div class="val ${cS}">${esc(fmt(said))}</div>
+            ${saidValue}
           </div>
         </div>
         <div class="desc">${esc(desc)}</div>
+        ${saidNote}
       </div>
     `;
   }
@@ -192,6 +233,7 @@
   function renderSections(report) {
     const c = report.counts;
     const sec = report.sectionScores;
+    const qf = report.qualityFlags || {};
 
     const t1Desc = `${c.task1 || 0} word${c.task1 === 1 ? "" : "s"} read aloud`;
     const t2Desc = `${c.task2 || 0} sentence${c.task2 === 1 ? "" : "s"} and groups`;
@@ -200,14 +242,31 @@
       ? (c.task4 ? "Not enough usable data" : "No data this session")
       : `${c.task4} prompt${c.task4 === 1 ? "" : "s"}`;
 
+    const t1Tile = qf.task1 && qf.task1.flagged
+      ? tileFlagged("Single words", qf.task1)
+      : tile("Single words", sec.task1, t1Desc);
+    const t2Tile = qf.task2 && qf.task2.flagged
+      ? tileFlagged("Sentences", qf.task2)
+      : tile("Sentences", sec.task2, t2Desc);
+    const t3Tile = tileSplit(
+      "Minimal pairs",
+      sec.task3Heard,
+      sec.task3Said,
+      t3Desc,
+      qf.task3 && qf.task3.flagged
+    );
+    const t4Tile = qf.task4 && qf.task4.flagged
+      ? tileFlagged("Free speech", qf.task4)
+      : tile("Free speech", sec.task4, t4Desc);
+
     return `
       <div class="report-card">
         <h2>How you did in each part</h2>
         <div class="sections">
-          ${tile("Single words", sec.task1, t1Desc)}
-          ${tile("Sentences", sec.task2, t2Desc)}
-          ${tileSplit("Minimal pairs", sec.task3Heard, sec.task3Said, t3Desc)}
-          ${tile("Free speech", sec.task4, t4Desc)}
+          ${t1Tile}
+          ${t2Tile}
+          ${t3Tile}
+          ${t4Tile}
         </div>
       </div>
     `;
@@ -251,10 +310,14 @@
 
   function renderStrengths(report) {
     if (!report.strengths || !report.strengths.length) {
+      const t1Flagged = report.qualityFlags && report.qualityFlags.task1 && report.qualityFlags.task1.flagged;
+      const lead = t1Flagged
+        ? "Couldn't pick out clear-pronunciation words — most Task 1 recordings had no clear speech detected. Please retake this part."
+        : "No words this session scored ≥85 across every sound. Don't worry — it's a high bar. Keep practising and try again.";
       return `
         <div class="report-card">
           <h2>Words you pronounced clearly</h2>
-          <p class="lead">No words this session scored ≥85 across every sound. Don't worry — it's a high bar. Keep practising and try again.</p>
+          <p class="lead">${esc(lead)}</p>
         </div>
       `;
     }
@@ -329,10 +392,20 @@
 
   function renderFocusAreas(report, recordingMap) {
     if (!report.focusAreas || !report.focusAreas.length) {
+      const t1Flagged = report.qualityFlags && report.qualityFlags.task1 && report.qualityFlags.task1.flagged;
+      const labelsMissing = report.phonemeLabelsAvailable === false;
+      let lead;
+      if (t1Flagged) {
+        lead = "Couldn't pull focus areas from this session — most Task 1 recordings had no clear speech detected. Please retake this part.";
+      } else if (labelsMissing) {
+        lead = "Couldn't analyse individual sounds for this session — Azure returned no phoneme labels in the response. This is a configuration issue, not a pronunciation issue. Try the test again; if it persists, the SDK call needs another look.";
+      } else {
+        lead = `No individual phonemes scored below ${Scoring.FOCUS_THRESHOLD} this session — nice work.`;
+      }
       return `
         <div class="report-card">
           <h2>What to work on</h2>
-          <p class="lead">No phoneme groups scored below ${Scoring.FOCUS_THRESHOLD} this session — nice work.</p>
+          <p class="lead">${esc(lead)}</p>
         </div>
       `;
     }
@@ -663,7 +736,7 @@
     };
   }
 
-  function renderSessionDetails(session) {
+  function renderSessionDetails(session, report) {
     const s = computeSessionStats(session);
 
     const reading = typeof s.readingRate === "number"
@@ -672,6 +745,18 @@
     const free = typeof s.freeRate === "number"
       ? `<div class="val" style="color:#1F2937;">${s.freeRate}</div>`
       : `<div class="val score-na">—</div>`;
+
+    const unscoredTotal = report && typeof report.unscoredTotal === "number" ? report.unscoredTotal : 0;
+    const itemsTotal = report && typeof report.itemsTotal === "number" ? report.itemsTotal : 0;
+    const unscoredTile = unscoredTotal > 0
+      ? `
+          <div class="section-tile">
+            <div class="name">Unscored items</div>
+            <div class="score-num score-low">${unscoredTotal}/${itemsTotal}</div>
+            <div class="desc">no clear speech detected</div>
+          </div>
+        `
+      : "";
 
     return `
       <div class="report-card">
@@ -706,6 +791,7 @@
             <div class="score-num" style="color:#1F2937;">${s.hintsUsed}/${s.hintsTotal}</div>
             <div class="desc">in word task</div>
           </div>
+          ${unscoredTile}
         </div>
         <div class="note" style="margin-top:16px;">
           <strong>Reading vs free speech:</strong> the reading rate covers Tasks 1, 2, and 3 — all script-based, so the words are chosen for you. The free rate (Task 4) is when you pick your own words, which is the more useful diagnostic for fluency. Native English conversational pace is roughly 150–180 wpm; read-aloud and L2 free speech are naturally slower.
@@ -897,7 +983,7 @@
     return `Most multi-syllable words landed stress correctly, but ${wrongCount} were off — the clearest example was <strong>${esc(ex.word)}</strong> (stress on "<em>${esc(ex.act)}</em>" instead of "<em>${esc(ex.exp)}</em>").`;
   }
 
-  function renderDetailPage(session) {
+  function renderDetailPage(session, report) {
     // 1. Filter to multi-syllable Task 1 words with usable Azure data.
     // 2. For each, classify stress + capture display data.
     // 3. Sort by score asc (most actionable first), then render.
@@ -923,11 +1009,15 @@
     rows.sort((a, b) => a.score - b.score);
 
     if (!rows.length) {
+      const t1Flagged = report && report.qualityFlags && report.qualityFlags.task1 && report.qualityFlags.task1.flagged;
+      const message = t1Flagged
+        ? `Couldn't analyse stress for this session — most Task 1 recordings had no clear speech detected. Please retake the test in a quiet space with the mic close to you.`
+        : `Not enough multi-syllable words in this session for a stress breakdown — try another session.`;
       return `
         <div class="page" data-page="detail">
           <div class="report-card">
             <h2>Detailed analysis</h2>
-            <p class="muted">Not enough multi-syllable words in this session for a stress breakdown — try another session.</p>
+            <p class="muted">${esc(message)}</p>
           </div>
         </div>
       `;
@@ -1268,10 +1358,10 @@
 
         ${renderFreeSpeech(report)}
 
-        ${renderSessionDetails(session)}
+        ${renderSessionDetails(session, report)}
       </div>
 
-      ${renderDetailPage(session)}
+      ${renderDetailPage(session, report)}
 
       ${renderFooter(session, report)}
 

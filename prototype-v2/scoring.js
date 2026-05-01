@@ -39,8 +39,17 @@
   // Strengths: every phoneme in the word must score ≥ this
   const STRENGTH_PHONEME_MIN = 85;
 
-  // Focus: any word whose worst phoneme (or word-level fallback) is < this
-  const FOCUS_THRESHOLD = 80;
+  // Focus areas — per-phoneme grouping. Any individual phoneme scoring below
+  // FOCUS_PHONEME_THRESHOLD is flagged into its ARPABET group. The earlier
+  // implementation grouped by `target_sound` from the word bank as a fallback
+  // when Azure returned empty Phoneme labels — that was producing wrong calls
+  // (e.g. flagging "N" on "necessary" because of the bank metadata, even
+  // though the actual N phoneme scored 97). Fallback now removed.
+  const FOCUS_PHONEME_THRESHOLD = 70;
+
+  // FOCUS_THRESHOLD retained for backward-compatible Scoring.FOCUS_THRESHOLD
+  // public access — used by results.js for the "no problems" copy line.
+  const FOCUS_THRESHOLD = FOCUS_PHONEME_THRESHOLD;
 
   // How many phoneme groups to show, and how many example words per group
   const FOCUS_GROUPS_MAX = 6;
@@ -49,6 +58,20 @@
   // Score band thresholds — used by bandLabel() and scoreClass()
   const BAND_HIGH = 85;
   const BAND_MID_LOW = 65;
+
+  // Quality threshold — fraction of items per task that may be "unscored"
+  // (silent / low confidence / hallucinated from noise) before the task is
+  // considered unreliable and we suppress its score entirely. The 25% number
+  // came from observing a session where the mic was off: 13/15 words returned
+  // ".", but the engine still computed a misleading 62 from the 2 noise-driven
+  // false positives. Anything over a quarter unscored = surface the problem,
+  // don't paper over it.
+  const QUALITY_THRESHOLD = 0.25;
+
+  // Per-item confidence below this counts the item as unscored. Azure returns
+  // 0.0 on pure-silence items and ~0.3 on noise hallucinations, so this also
+  // catches the "Bath." / "Think." style false positives we've observed.
+  const MIN_CONFIDENCE = 0.3;
 
   // =============================================================================
   // Small helpers
@@ -97,10 +120,58 @@
   // shapes we have (Tasks 1/2/3 PA vs Task 4 STT→PA chain).
   // =============================================================================
 
+  // Detects items where Azure returned no usable speech. Triggers on:
+  //   • null / error envelopes
+  //   • the existing lowConfidence flag from Task 4's STT step
+  //   • empty or punctuation-only transcripts (Azure returns "." for silence)
+  //   • RecognitionStatus other than "Success"
+  //   • NBest[0].Confidence < MIN_CONFIDENCE (catches noise hallucinations)
+  // The Task 4 envelope wraps a PA envelope inside paResult; we recurse.
+  function isUnscored(azure) {
+    if (!azure) return true;
+    if (azure.error) return true;
+    if (azure.lowConfidence === true) return true;
+
+    // Task 4 STT-then-PA envelope: a usable item must have a real transcript.
+    if (azure.paResult || "transcript" in azure) {
+      const transcript = String(azure.transcript || "").trim();
+      if (!transcript) return true;
+      if (/^[.?!,\s]*$/.test(transcript)) return true;
+      if (typeof azure.confidence === "number" && azure.confidence < MIN_CONFIDENCE) return true;
+      // STT was usable; recurse into PA if present so a flagged PA item is
+      // still excluded from phoneme/fluency dims.
+      return azure.paResult ? isUnscored(azure.paResult) : false;
+    }
+
+    // Reading-mode envelope (Tasks 1, 2, 3).
+    const text = String(azure.text || "").trim();
+    if (!text) return true;
+    if (/^[.?!,\s]*$/.test(text)) return true;
+
+    const root = azure.json || null;
+    if (root) {
+      if (root.RecognitionStatus && root.RecognitionStatus !== "Success") return true;
+      const nb = root.NBest && root.NBest[0];
+      if (nb && typeof nb.Confidence === "number" && nb.Confidence < MIN_CONFIDENCE) return true;
+    }
+    return false;
+  }
+
+  // Returns { total, unscored, flagged } for a list of task results.
+  function taskQuality(results) {
+    const total = (results && results.length) || 0;
+    let unscored = 0;
+    if (total > 0) {
+      for (const r of results) {
+        if (isUnscored(r && r.azure)) unscored++;
+      }
+    }
+    const flagged = total > 0 && unscored / total > QUALITY_THRESHOLD;
+    return { total, unscored, flagged };
+  }
+
   function nbest(azure) {
-    if (!azure) return null;
-    if (azure.error) return null;
-    if (azure.lowConfidence) return null;
+    if (isUnscored(azure)) return null;
     const root = azure.json || (azure.paResult && azure.paResult.json) || null;
     if (!root || !root.NBest || !root.NBest[0]) return null;
     return root.NBest[0];
@@ -304,96 +375,85 @@
   }
 
   // =============================================================================
-  // Focus areas — phoneme groups the learner should work on
+  // Focus areas — phoneme groups the learner should work on.
   //
-  // Per the brief + user instruction:
-  //   • Group by actual phoneme code when Azure phoneme labels are populated.
-  //   • Fall back to target_sound from the word bank when labels are empty.
-  //   • Show example words from the session (max 3 per phoneme group).
-  //   • Pull tip + label + example word from phoneme_tips.json by ARPABET key.
+  // For every phoneme in every Task 1 word: if its AccuracyScore is below
+  // FOCUS_PHONEME_THRESHOLD and Azure returned a non-empty label, add an entry
+  // to that phoneme's group. Words are de-duped per group (we keep the lowest
+  // score for that phoneme within the word). Groups are sorted by average
+  // group score ascending so the most actionable phoneme is first.
+  //
+  // Returns { groups, phonemeLabelsAvailable }. The flag is false if Azure
+  // returned every Phoneme string blank (an SDK / config bug, not the user's
+  // fault) — the renderer surfaces that distinctly so the user doesn't read
+  // the empty section as "no issues found".
   // =============================================================================
 
   function computeFocusAreas(session, tips) {
-    const candidates = [];
+    let totalPhonemes = 0;
+    let labelledPhonemes = 0;
+
+    // Build a per-(phoneme code, word_id) map of the lowest score we saw.
+    // Then collapse to one entry per code.
+    const byCode = new Map(); // codeUpper → Map<word_id, { word, word_id, score, wavBlobRef, recording }>
 
     for (const r of (session.task1.results || [])) {
+      if (isUnscored(r && r.azure)) continue;
       const w = wordsOf(r.azure)[0];
       if (!w) continue;
       const phs = w.Phonemes || [];
 
-      // Find the lowest-scoring phoneme + its label (may be empty string)
-      let lowestAcc = null;
-      let lowestCodeRaw = null;
-      let anyLabel = false;
       for (const p of phs) {
         const acc = p.PronunciationAssessment && p.PronunciationAssessment.AccuracyScore;
         if (!isNum(acc)) continue;
+        totalPhonemes++;
         const codeRaw = (p.Phoneme || "").trim();
-        if (codeRaw) anyLabel = true;
-        if (lowestAcc == null || acc < lowestAcc) {
-          lowestAcc = acc;
-          lowestCodeRaw = codeRaw;
+        if (!codeRaw) continue;
+        labelledPhonemes++;
+        if (acc >= FOCUS_PHONEME_THRESHOLD) continue;
+
+        const code = codeRaw.toUpperCase();
+        if (!byCode.has(code)) byCode.set(code, new Map());
+        const wordsMap = byCode.get(code);
+        const existing = wordsMap.get(r.word_id);
+        const rounded = Math.round(acc);
+        if (!existing || rounded < existing.score) {
+          wordsMap.set(r.word_id, {
+            word: r.word,
+            word_id: r.word_id,
+            score: rounded,
+            wavBlobRef: r.wavBlob || null,   // attached for "Play your recording"
+            recording: !!r.wavBlob,
+          });
         }
       }
-
-      // Decide grouping code + score
-      let groupCode = null;
-      let groupScore = null;
-      let scoreSource = "phoneme"; // "phoneme" | "fallback"
-
-      if (anyLabel && lowestCodeRaw) {
-        groupCode = lowestCodeRaw.toUpperCase();
-        groupScore = lowestAcc;
-      } else {
-        // Fallback path — Azure didn't label phonemes. Use the bank's
-        // target_sound and the word-level accuracy.
-        groupCode = r.target_sound || null;
-        const wAcc = w.PronunciationAssessment && w.PronunciationAssessment.AccuracyScore;
-        groupScore = isNum(wAcc) ? wAcc : null;
-        scoreSource = "fallback";
-      }
-
-      if (!groupCode || !isNum(groupScore)) continue;
-      if (groupScore >= FOCUS_THRESHOLD) continue;
-
-      candidates.push({
-        code: groupCode,
-        word: r.word,
-        word_id: r.word_id,
-        score: Math.round(groupScore),
-        scoreSource,
-        wavBlobRef: r.wavBlob || null,   // attached for "Play your recording"
-        recording: !!r.wavBlob,
-      });
     }
 
-    // Group + sort
-    const byCode = new Map();
-    for (const c of candidates) {
-      if (!byCode.has(c.code)) byCode.set(c.code, []);
-      byCode.get(c.code).push(c);
-    }
+    const phonemeLabelsAvailable = totalPhonemes === 0 ? null : labelledPhonemes > 0;
 
     const groups = [];
-    for (const [code, words] of byCode) {
-      words.sort((a, b) => a.score - b.score);
-      const avg = words.reduce((s, w) => s + w.score, 0) / words.length;
+    for (const [code, wordsMap] of byCode) {
+      const wordEntries = Array.from(wordsMap.values()).sort((a, b) => a.score - b.score);
+      const avg = wordEntries.reduce((s, w) => s + w.score, 0) / wordEntries.length;
       const tip = tips && tips[code];
       groups.push({
         code,
         avg: Math.round(avg),
-        tier: avg < 65 ? "low" : "mid",
-        examples: words.slice(0, FOCUS_EXAMPLES_PER_GROUP),
+        tier: avg < 60 ? "low" : "mid",
+        examples: wordEntries.slice(0, FOCUS_EXAMPLES_PER_GROUP),
         label: tip && tip.label ? tip.label : code,
         example_word: tip && tip.example_word ? tip.example_word : null,
         tip: tip && tip.tip ? tip.tip : null,
-        // Some groups (rare phonemes) won't have an entry in phoneme_tips.json.
+        // Groups for rare phonemes won't have an entry in phoneme_tips.json.
         // The renderer can still display the code + words but skips the tip box.
       });
     }
 
     groups.sort((a, b) => a.avg - b.avg);
-    return groups.slice(0, FOCUS_GROUPS_MAX);
+    return {
+      groups: groups.slice(0, FOCUS_GROUPS_MAX),
+      phonemeLabelsAvailable,
+    };
   }
 
   // =============================================================================
@@ -494,11 +554,45 @@
       task4: (session.task4 && session.task4.results || []).length,
     };
 
+    // ------------------------------------------------------------- Quality flags
+    // Per-task: how many items returned no usable speech, and whether the
+    // task crosses the QUALITY_THRESHOLD that suppresses its score.
+    const qualityFlags = {
+      task1: taskQuality(session.task1 && session.task1.results),
+      task2: taskQuality(session.task2 && session.task2.results),
+      task3: taskQuality(session.task3 && session.task3.results),
+      task4: taskQuality(session.task4 && session.task4.results),
+    };
+
+    // Whole-session is flagged when every task that had any items is flagged.
+    // (A test where Task 4 was skipped entirely shouldn't poison Tasks 1-3.)
+    const taskKeys = ["task1", "task2", "task3", "task4"];
+    const tasksWithItems = taskKeys.filter((k) => qualityFlags[k].total > 0);
+    const sessionFlagged =
+      tasksWithItems.length > 0 && tasksWithItems.every((k) => qualityFlags[k].flagged);
+
+    const unscoredTotal = taskKeys.reduce((s, k) => s + qualityFlags[k].unscored, 0);
+    const itemsTotal = taskKeys.reduce((s, k) => s + qualityFlags[k].total, 0);
+
+    // Per-task usable result lists. A flagged task contributes nothing to
+    // dimensions or section scores — silent items inside non-flagged tasks
+    // are also dropped (nbest() returns null for them, so most helpers
+    // already skip them, but explicit filtering keeps the iteration honest).
+    function usable(taskKey) {
+      if (qualityFlags[taskKey].flagged) return [];
+      const t = session[taskKey];
+      const rs = (t && t.results) || [];
+      return rs.filter((r) => !isUnscored(r && r.azure));
+    }
+    const t1Usable = usable("task1");
+    const t2Usable = usable("task2");
+    const t3Usable = usable("task3");
+    const t4Usable = usable("task4");
+
     // ------------------------------------------------------------- Phoneme accuracy
     const allPhAcc = [];
-    for (const t of [session.task1, session.task2, session.task3, session.task4]) {
-      if (!t || !t.results) continue;
-      for (const r of t.results) {
+    for (const list of [t1Usable, t2Usable, t3Usable, t4Usable]) {
+      for (const r of list) {
         const accs = phonemeAccuracies(wordsOf(r.azure));
         for (const a of accs) allPhAcc.push(a);
       }
@@ -507,9 +601,8 @@
 
     // ------------------------------------------------------------- Fluency
     const fluencyScores = [];
-    for (const t of [session.task2, session.task4]) {
-      if (!t || !t.results) continue;
-      for (const r of t.results) {
+    for (const list of [t2Usable, t4Usable]) {
+      for (const r of list) {
         const pa = paBlock(r.azure);
         if (pa && isNum(pa.FluencyScore)) fluencyScores.push(pa.FluencyScore);
       }
@@ -518,7 +611,7 @@
 
     // ------------------------------------------------------------- Word stress
     const stressScoresPerWord = [];
-    for (const r of (session.task1.results || [])) {
+    for (const r of t1Usable) {
       const accs = stressedPhonemeAccuracies(r);
       if (accs.length) {
         const s = mean(accs);
@@ -531,8 +624,8 @@
     // Compares Task 1 (single-word) phoneme accuracy to Task 2 (sentence)
     // phoneme accuracy. Holding steady or improving = 100; meaningful drop in
     // sentences = points off proportional to the gap.
-    const t1ItemAvgs = (session.task1.results || []).map(itemPhonemeAvg).filter(isNum);
-    const t2ItemAvgs = (session.task2.results || []).map(itemPhonemeAvg).filter(isNum);
+    const t1ItemAvgs = t1Usable.map(itemPhonemeAvg).filter(isNum);
+    const t2ItemAvgs = t2Usable.map(itemPhonemeAvg).filter(isNum);
 
     let stabilityDim = null;
     let stabilityT1 = null;
@@ -562,15 +655,18 @@
       sentenceStability: stabilityDim,
     };
 
-    const overallRaw = compositeScore(dimensions);
+    const overallRaw = sessionFlagged ? null : compositeScore(dimensions);
 
-    // Section scores
+    // Section scores. Flagged tasks return null so the renderer can show a
+    // "couldn't score" message instead of a misleading number. Task 3 Heard
+    // is recording-independent (it's button-tap perception), so it stays
+    // available even when Task 3 audio is flagged.
     const sectionScores = {
-      task1: sectionTask1(session),
-      task2: sectionTask2(session),
+      task1: qualityFlags.task1.flagged ? null : sectionTask1(session),
+      task2: qualityFlags.task2.flagged ? null : sectionTask2(session),
       task3Heard: sectionTask3Heard(session),
-      task3Said: sectionTask3Said(session),
-      task4: sectionTask4(session),
+      task3Said: qualityFlags.task3.flagged ? null : sectionTask3Said(session),
+      task4: qualityFlags.task4.flagged ? null : sectionTask4(session),
     };
 
     // Perception / production helpers (used by listening narrative)
@@ -578,9 +674,20 @@
     const perceptionCorrect = t3Results.filter((r) => r.round1_correct === true).length;
     const perceptionTotal = t3Results.filter((r) => typeof r.round1_correct === "boolean").length;
 
+    // Strengths and focus areas are Task 1 driven — suppress when T1 is flagged.
+    const strengths = qualityFlags.task1.flagged ? [] : computeStrengths(session);
+    const focusResult = qualityFlags.task1.flagged
+      ? { groups: [], phonemeLabelsAvailable: null }
+      : computeFocusAreas(session, tips);
+    const focusAreas = focusResult.groups;
+    const phonemeLabelsAvailable = focusResult.phonemeLabelsAvailable;
+
     const out = {
       overall: roundOrNull(overallRaw),
-      band: bandLabel(overallRaw),
+      band: sessionFlagged
+        ? "Session not scored — recording issues"
+        : bandLabel(overallRaw),
+      sessionFlagged,
       dimensions: {
         phoneme: roundOrNull(dimensions.phoneme),
         fluency: roundOrNull(dimensions.fluency),
@@ -595,9 +702,13 @@
         task3Said: roundOrNull(sectionScores.task3Said),
         task4: roundOrNull(sectionScores.task4),
       },
+      qualityFlags,
+      unscoredTotal,
+      itemsTotal,
       counts,
-      strengths: computeStrengths(session),
-      focusAreas: computeFocusAreas(session, tips),
+      strengths,
+      focusAreas,
+      phonemeLabelsAvailable,
       listening: computeListening(session),
       freeSpeech: computeFreeSpeech(session),
       perception: {
@@ -626,10 +737,14 @@
     compute,
     bandLabel,
     scoreClass,
+    isUnscored,
+    taskQuality,
     WEIGHTS,
     SENTENCE_STABILITY_MULTIPLIER,
     CONSISTENCY_MULTIPLIER,
     FOCUS_THRESHOLD,
     STRENGTH_PHONEME_MIN,
+    QUALITY_THRESHOLD,
+    MIN_CONFIDENCE,
   };
 })(typeof window !== "undefined" ? window : globalThis);
