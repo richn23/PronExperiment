@@ -109,6 +109,32 @@
     return "low";
   }
 
+  // Maps technical dimensions to the 5 friendly radar axes
+  function radarDims(report) {
+    const d = report.dimensions;
+    const stVals = [d.consistency, d.sentenceStability].filter((v) => typeof v === "number");
+    const stability = stVals.length
+      ? Math.round(stVals.reduce((s, x) => s + x, 0) / stVals.length)
+      : null;
+    return {
+      sounds:    typeof d.phoneme === "number" ? Math.round(d.phoneme) : null,
+      rhythm:    typeof d.stress  === "number" ? Math.round(d.stress)  : null,
+      fluency:   typeof d.fluency === "number" ? Math.round(d.fluency) : null,
+      stability,
+      clarity:   report.overall,
+    };
+  }
+
+  // SVG point for a pentagon radar: angle 0 = top, clockwise
+  function radarPt(cx, cy, R, angleDeg, score) {
+    const r = R * (Math.max(0, Math.min(100, score || 0)) / 100);
+    const rad = (angleDeg - 90) * Math.PI / 180;
+    return [
+      (cx + r * Math.cos(rad)).toFixed(1),
+      (cy + r * Math.sin(rad)).toFixed(1),
+    ];
+  }
+
   // =============================================================================
   // Section 1 — Hero
   // =============================================================================
@@ -163,29 +189,142 @@
   }
 
   function renderHero(report) {
-    if (report.sessionFlagged) {
+    const score = fmt(report.overall);
+    const flagged = report.sessionFlagged;
+    const bg = flagged ? "background:#94a3b8;" : "";
+    const scoreLine = flagged
+      ? `<div class="band" style="margin-top:6px;font-size:18px;">Recording issues detected</div>`
+      : `<div class="score">${esc(score)}<span>/100</span></div><div class="band">${esc(report.band)}</div>`;
+    const narrative = summaryNarrative(report);
+    return `
+      <div class="hero" style="${bg}">
+        <div class="label">Your Pronunciation Score</div>
+        ${scoreLine}
+        <p class="one-liner">${esc(narrative)}</p>
+      </div>
+    `;
+  }
+
+  // Radar axis info — plain language, no jargon
+  const RADAR_INFO = {
+    sounds:    ["Sounds",    "How clearly you produce each individual sound — like the /θ/ in 'think' or the short /ɪ/ in 'ship'. This is the most direct measure of pronunciation accuracy."],
+    rhythm:    ["Rhythm",    "Whether you stress the right part of each word and link words together naturally, the way fluent speakers do."],
+    fluency:   ["Fluency",   "How smoothly your speech flows — your pace and whether you pause too much. This isn't about speaking fast; it's about speech that sounds natural and continuous."],
+    stability: ["Stability", "Whether your pronunciation stays consistent — both across the whole session and when single words join into full sentences."],
+    clarity:   ["Clarity",   "How easily a listener can understand you overall. This is the composite score."],
+  };
+
+  function renderProfile(report) {
+    const rd = radarDims(report);
+    const CX = 160, CY = 150, R = 110;
+    const axes = [
+      { key: "sounds",    angle: 0,   label: "Sounds",    x: CX,       y: CY - R - 22, anchor: "middle" },
+      { key: "rhythm",    angle: 72,  label: "Rhythm",    x: CX + 128, y: CY - 34,     anchor: "start"  },
+      { key: "fluency",   angle: 144, label: "Fluency",   x: CX + 80,  y: CY + R + 22, anchor: "start"  },
+      { key: "stability", angle: 216, label: "Stability", x: CX - 80,  y: CY + R + 22, anchor: "end"    },
+      { key: "clarity",   angle: 288, label: "Clarity",   x: CX - 128, y: CY - 34,     anchor: "end"    },
+    ];
+
+    // Outer grid pentagon (score = 100)
+    const outerPts = axes.map((a) => radarPt(CX, CY, R, a.angle, 100)).map((p) => p.join(",")).join(" ");
+    // Half grid (score = 50)
+    const halfPts  = axes.map((a) => radarPt(CX, CY, R, a.angle, 50)).map((p) => p.join(",")).join(" ");
+    // Data polygon
+    const dataPts  = axes.map((a) => radarPt(CX, CY, R, a.angle, rd[a.key])).map((p) => p.join(",")).join(" ");
+    // Data dot circles
+    const dots = axes.map((a) => {
+      const [px, py] = radarPt(CX, CY, R, a.angle, rd[a.key]);
+      return `<circle cx="${px}" cy="${py}" r="3.5" fill="#2563eb"/>`;
+    }).join("");
+    // Grid spokes
+    const spokes = axes.map((a) => {
+      const [px, py] = radarPt(CX, CY, R, a.angle, 100);
+      return `<line x1="${CX}" y1="${CY}" x2="${px}" y2="${py}" stroke="#e5e7eb" stroke-width="1"/>`;
+    }).join("");
+    // Labels
+    const labels = axes.map((a) => {
+      return `<text x="${a.x}" y="${a.y}" fill="#6B7280" font-size="12" font-family="sans-serif" text-anchor="${a.anchor}">${esc(a.label)}</text>`;
+    }).join("");
+
+    // Right-side axis list
+    const axisRows = axes.map((a) => {
+      const v = rd[a.key];
+      const cls = typeof v === "number" ? (v >= 85 ? "score-high" : v >= 65 ? "score-mid" : "score-low") : "score-na";
       return `
-        <div class="hero report-card flagged" style="background:#94a3b8;">
-          <div class="label">
-            Session not scored
-            <button class="info-btn" data-modal="how" title="How is this score calculated?" type="button">i</button>
-          </div>
-          <div class="band" style="margin-top:6px; font-size:18px;">Recording issues — most items had no clear speech</div>
-          <p class="summary">${esc(summaryNarrative(report))}</p>
+        <div class="axis">
+          <span class="nm">${esc(a.label)}<button class="iq" data-radar="${esc(a.key)}" type="button">i</button></span>
+          <span class="vl ${cls}">${fmt(v)}</span>
         </div>
       `;
-    }
-    const score = fmt(report.overall);
-    const cls = Scoring.scoreClass(report.overall);
+    }).join("");
+
     return `
-      <div class="hero report-card" style="${cls === "score-na" ? "background:#94a3b8;" : ""}">
-        <div class="label">
-          Your Pronunciation Score
-          <button class="info-btn" data-modal="how" title="How is this score calculated?" type="button">i</button>
+      <div class="card">
+        <h2>Your pronunciation profile</h2>
+        <div class="profile">
+          <svg viewBox="0 0 320 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pronunciation profile radar chart">
+            <polygon points="${outerPts}" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+            <polygon points="${halfPts}"  fill="none" stroke="#e5e7eb" stroke-width="1"/>
+            ${spokes}
+            <polygon points="${dataPts}" fill="rgba(37,99,235,0.18)" stroke="#2563eb" stroke-width="2"/>
+            ${dots}
+            ${labels}
+          </svg>
+          <div class="axes">
+            ${axisRows}
+          </div>
         </div>
-        <div class="score">${esc(score)}</div>
-        <div class="band">${esc(report.band)}</div>
-        <p class="summary">${esc(summaryNarrative(report))}</p>
+      </div>
+    `;
+  }
+
+  function renderSummaryPanel(report) {
+    const rd = radarDims(report);
+    const perc = report.perception || {};
+    const perceptionRate = perc.total > 0 ? perc.correct / perc.total : null;
+
+    // Build strengths list (up to 3)
+    const goods = [];
+    if (typeof rd.sounds === "number" && rd.sounds >= 80)
+      goods.push("Clear individual sounds");
+    if (typeof rd.fluency === "number" && rd.fluency >= 80)
+      goods.push("Natural speaking flow");
+    if (perceptionRate !== null && perceptionRate >= 0.75)
+      goods.push("Strong listening discrimination");
+    if (typeof rd.rhythm === "number" && rd.rhythm >= 80)
+      goods.push("Good word stress");
+    if (typeof report.sectionScores.task2 === "number" &&
+        typeof report.sectionScores.task1 === "number" &&
+        report.sectionScores.task2 >= report.sectionScores.task1 - 5)
+      goods.push("Pronunciation holds in sentences");
+    const goodItems = goods.slice(0, 3)
+      .map((g) => `<li>&#x2705; ${esc(g)}</li>`)
+      .join("") || `<li class="muted">Keep going — more data needed.</li>`;
+
+    // Build improvements list (up to 3)
+    const fixes = [];
+    for (const g of (report.focusAreas || []).slice(0, 2)) {
+      const ex = PHONEME_EXAMPLES[g.code];
+      fixes.push(ex ? `${esc(g.label)} as in "${esc(ex)}"` : esc(g.label));
+    }
+    if (typeof rd.stability === "number" && rd.stability < 70)
+      fixes.push("Holding sounds in longer sentences");
+    const fixItems = fixes.slice(0, 3)
+      .map((f) => `<li>&#x1F3AF; ${f}</li>`)
+      .join("") || `<li class="muted">Nothing flagged — great session.</li>`;
+
+    return `
+      <div class="card">
+        <div class="two-col">
+          <div>
+            <h2>What you're doing well</h2>
+            <ul class="list-clean">${goodItems}</ul>
+          </div>
+          <div>
+            <h2>What to improve next</h2>
+            <ul class="list-clean">${fixItems}</ul>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -298,6 +437,87 @@
     `;
   }
 
+  function renderTaskTable(report) {
+    const c = report.counts;
+    const sec = report.sectionScores;
+    const qf = report.qualityFlags || {};
+    const perc = report.perception || {};
+
+    function taskRow(label, score, flagged) {
+      if (flagged) return `<tr><td>${esc(label)}</td><td class="num score-na">—</td></tr>`;
+      const cls = typeof score === "number"
+        ? (score >= 85 ? "score-high" : score >= 65 ? "score-mid" : "score-low")
+        : "score-na";
+      return `<tr><td>${esc(label)}</td><td class="num ${cls}">${fmt(score)}</td></tr>`;
+    }
+
+    const t3Score = perc.total > 0 ? Math.round((perc.correct / perc.total) * 100) : sec.task3;
+
+    return `
+      <div>
+        <h2>Performance by task</h2>
+        <table class="t">
+          <tbody>
+            ${taskRow("Words", sec.task1, qf.task1 && qf.task1.flagged)}
+            ${taskRow("Sentences", sec.task2, qf.task2 && qf.task2.flagged)}
+            ${taskRow("Listen & identify", t3Score, false)}
+            ${taskRow("Listen & repeat", sec.task4, qf.task4 && qf.task4.flagged)}
+            ${taskRow("Free speech", sec.task5, qf.task5 && qf.task5.flagged)}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function renderHearSay(report) {
+    const rows = report.hearSay || [];
+    if (!rows.length) return "";
+
+    const tableRows = rows.map((r) => {
+      const hearIcon = r.hearCorrect === true  ? `<span class="ok">&#x2713;</span>`
+                     : r.hearCorrect === false ? `<span class="no">&#x2717;</span>`
+                     : `<span style="color:#9CA3AF">—</span>`;
+      const sayIcon  = r.sayCorrect  === true  ? `<span class="ok">&#x2713;</span>`
+                     : r.sayCorrect  === false ? `<span class="no">&#x2717;</span>`
+                     : `<span style="color:#9CA3AF">—</span>`;
+      return `<tr>
+        <td>${esc(r.label || r.contrast)}</td>
+        <td style="text-align:center">${hearIcon}</td>
+        <td style="text-align:center">${sayIcon}</td>
+      </tr>`;
+    }).join("");
+
+    // Build a plain-language note about the hear/say pattern
+    const hearTotal   = rows.filter((r) => r.hearCorrect !== null).length;
+    const hearOk      = rows.filter((r) => r.hearCorrect === true).length;
+    const sayTotal    = rows.filter((r) => r.sayCorrect  !== null).length;
+    const sayOk       = rows.filter((r) => r.sayCorrect  === true).length;
+    const bothWrong   = rows.filter((r) => r.hearCorrect === false && r.sayCorrect === false).length;
+    const hearOkSayNo = rows.filter((r) => r.hearCorrect === true  && r.sayCorrect === false).length;
+
+    let note = "";
+    if (hearTotal > 0 && sayTotal > 0) {
+      if (hearOkSayNo > 0) {
+        note = `You can hear ${hearOk} of ${hearTotal} contrasts correctly but don't always produce them accurately — the gap between hearing and saying is the main thing to practise.`;
+      } else if (bothWrong > 0) {
+        note = `${bothWrong} contrast${bothWrong === 1 ? "" : "s"} ${bothWrong === 1 ? "was" : "were"} difficult both to identify and to produce — focus here first.`;
+      } else if (sayOk >= sayTotal) {
+        note = "You're both hearing and saying these contrasts clearly — strong performance across the board.";
+      }
+    }
+
+    return `
+      <div>
+        <h2>Hear it &#x2192; Say it</h2>
+        <table class="t">
+          <thead><tr><th>Contrast</th><th style="text-align:center">Hear it</th><th style="text-align:center">Say it</th></tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        ${note ? `<div class="result-note">${esc(note)}</div>` : ""}
+      </div>
+    `;
+  }
+
   // =============================================================================
   // Section 3 — Dimensions
   // =============================================================================
@@ -326,6 +546,47 @@
       <div class="report-card">
         <h2>The five things we measure</h2>
         ${DIM_ORDER.map((k) => renderDimension(k, dims[k])).join("")}
+      </div>
+    `;
+  }
+
+  function renderDimBreakdown(report) {
+    const rd = radarDims(report);
+    const d = report.dimensions;
+
+    function dimBox(friendlyName, score, description) {
+      const cls = typeof score === "number"
+        ? (score >= 85 ? "score-high" : score >= 65 ? "score-mid" : "score-low")
+        : "score-na";
+      return `
+        <div class="dim-break">
+          <div class="top"><span>${esc(friendlyName)}</span><span class="${cls}">${fmt(score)}</span></div>
+          <div class="made">${esc(description)}</div>
+        </div>
+      `;
+    }
+
+    const stabilityDesc = (typeof d.consistency === "number" && typeof d.sentenceStability === "number")
+      ? `Average of Consistency (${d.consistency}) and Sentence stability (${d.sentenceStability}).`
+      : "Consistency + Sentence stability (how well pronunciation holds as sentences get longer).";
+
+    return `
+      <div>
+        <h2>What each part of your profile is made of</h2>
+        ${dimBox("Sounds",    rd.sounds,    "Phoneme accuracy — how correctly you produce each individual sound.")}
+        ${dimBox("Rhythm",    rd.rhythm,    "Word stress — whether you stress the right syllable in each word.")}
+        ${dimBox("Fluency",   rd.fluency,   "Azure's fluency model — pace, pausing, and length of speech runs.")}
+        ${dimBox("Stability", rd.stability, stabilityDesc)}
+        ${dimBox("Clarity",   rd.clarity,   "Overall composite score — a weighted blend of all five dimensions.")}
+      </div>
+      <div>
+        <h2>The underlying formula</h2>
+        <p class="muted" style="margin-bottom:10px">The 0–100 score is a weighted blend of five technical dimensions:</p>
+        <div class="formula">Score = (Phoneme accuracy &times; 0.25)<br>&nbsp;&nbsp;&nbsp;&nbsp;+ (Fluency &times; 0.22)<br>&nbsp;&nbsp;&nbsp;&nbsp;+ (Word stress &times; 0.18)<br>&nbsp;&nbsp;&nbsp;&nbsp;+ (Consistency &times; 0.18)<br>&nbsp;&nbsp;&nbsp;&nbsp;+ (Sentence stability &times; 0.17)</div>
+      </div>
+      <div>
+        <h2>Where the data comes from</h2>
+        <p class="muted">Every recording is scored by <strong>Azure Speech Pronunciation Assessment</strong>, which returns a 0–100 quality score and the most-likely produced sound for every phoneme. Consistency is the standard deviation of your per-item scores; Sentence stability compares single-word accuracy against sentence accuracy.</p>
       </div>
     `;
   }
@@ -566,25 +827,21 @@
   function renderSentenceStability(report) {
     const t1 = report.sectionScores.task1;
     const t2 = report.sectionScores.task2;
-
-    const cls1 = Scoring.scoreClass(t1);
-    const cls2 = Scoring.scoreClass(t2);
-    const narrative = stabilityNarrative(t1, t2);
-
+    const cls1 = typeof t1 === "number" ? (t1 >= 85 ? "score-high" : t1 >= 65 ? "score-mid" : "score-low") : "score-na";
+    const cls2 = typeof t2 === "number" ? (t2 >= 85 ? "score-high" : t2 >= 65 ? "score-mid" : "score-low") : "score-na";
+    const diff = (typeof t1 === "number" && typeof t2 === "number") ? Math.round(t2 - t1) : null;
+    const diffCls = diff === null ? "score-na" : diff >= 0 ? "score-high" : diff >= -10 ? "score-mid" : "score-low";
+    const diffStr = diff === null ? "—" : diff >= 0 ? `+${diff}` : String(diff);
+    const note = stabilityNarrative(t1, t2);
     return `
-      <div class="report-card">
+      <div>
         <h2>Words vs sentences</h2>
         <div class="compare">
-          <div class="compare-side">
-            <div class="lbl">Single words</div>
-            <div class="num ${cls1}">${esc(fmt(t1))}</div>
-          </div>
-          <div class="compare-side">
-            <div class="lbl">In sentences</div>
-            <div class="num ${cls2}">${esc(fmt(t2))}</div>
-          </div>
+          <div class="box"><div class="l">Words</div><div class="n ${cls1}">${fmt(t1)}</div></div>
+          <div class="box"><div class="l">Sentences</div><div class="n ${cls2}">${fmt(t2)}</div></div>
+          <div class="box"><div class="l">Change</div><div class="n ${diffCls}">${esc(diffStr)}</div></div>
         </div>
-        <p class="compare-narrative">${narrative}</p>
+        <p class="muted" style="margin-top:10px">${esc(note.replace(/<\/?strong>/g, ""))}</p>
       </div>
     `;
   }
@@ -637,6 +894,18 @@
   // =============================================================================
   // Modals — "How is this score calculated?" + per-dimension popups
   // =============================================================================
+
+  function renderInfoModal() {
+    return `
+      <div class="modal-bg" id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+        <div class="modal-box">
+          <h3 id="infoModalTitle">—</h3>
+          <p id="infoModalText" style="font-size:14px;color:#374151;line-height:1.6;">—</p>
+          <button class="modal-x" id="infoModalClose" type="button">Got it</button>
+        </div>
+      </div>
+    `;
+  }
 
   function renderHowModal() {
     return `
@@ -1353,6 +1622,39 @@
   // Modal binding
   // =============================================================================
 
+  function bindInfoModal(root) {
+    const modal    = root.querySelector("#infoModal");
+    const titleEl  = root.querySelector("#infoModalTitle");
+    const textEl   = root.querySelector("#infoModalText");
+    const closeBtn = root.querySelector("#infoModalClose");
+
+    function open(title, html) {
+      titleEl.textContent = title;
+      textEl.innerHTML = html;
+      modal.classList.add("open");
+    }
+    function close() { modal.classList.remove("open"); }
+
+    // Radar axis info buttons
+    root.querySelectorAll(".iq[data-radar]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-radar");
+        const info = RADAR_INFO[key];
+        if (info) open(info[0], Utils.escapeHtml(info[1]));
+      });
+    });
+
+    if (closeBtn) closeBtn.addEventListener("click", close);
+    if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+
+    return function dispose() {
+      document.removeEventListener("keydown", onKey);
+    };
+  }
+
   function bindModals(root) {
     const howModal = root.querySelector("#howModal");
     const dimModal = root.querySelector("#dimModal");
@@ -1432,39 +1734,38 @@
     if (root.parentElement) root.parentElement.classList.add("screen-wide");
     // The .screen has display:flex on it. Add a class to override gap if needed.
 
-    // Hero, how-modal, footer, and the action buttons live OUTSIDE the page
-    // tabs — hero/how-modal because the "i" affordance applies to the overall
-    // score regardless of which page you're on; footer/btn-row because they
-    // anchor the whole report. The dim-modal lives inside the summary page
-    // because dim "i" buttons only exist there.
     root.innerHTML = `
       ${renderHero(report)}
-      ${renderHowModal()}
 
-      ${renderTabs()}
+      ${renderProfile(report)}
 
-      <div class="page active" data-page="summary">
-        ${renderSections(report)}
+      ${renderSummaryPanel(report)}
 
-        ${renderDimensions(report)}
-        ${renderDimModal()}
+      <details class="tier" id="tierLearning">
+        <summary><span>Show me more</span><span class="chev">Learning layer &#x25BE;</span></summary>
+        <div class="tier-body">
+          ${renderTaskTable(report)}
+          ${renderHearSay(report)}
+          ${renderSentenceStability(report)}
+        </div>
+      </details>
 
-        ${renderStrengths(report)}
+      <details class="tier" id="tierCoach">
+        <summary><span>Coaching &amp; practice</span><span class="chev">Coach layer &#x25BE;</span></summary>
+        <div class="tier-body">
+          ${renderFocusAreas(report, recordingMap)}
+          ${renderPhonemeChart(report)}
+        </div>
+      </details>
 
-        ${renderFocusAreas(report, recordingMap)}
+      <details class="tier" id="tierAdvanced">
+        <summary><span>How is my score calculated?</span><span class="chev">Advanced &#x25BE;</span></summary>
+        <div class="tier-body">
+          ${renderDimBreakdown(report)}
+        </div>
+      </details>
 
-        ${renderPhonemeChart(report)}
-
-        ${renderListening(report)}
-
-        ${renderSentenceStability(report)}
-
-        ${renderFreeSpeech(report)}
-
-        ${renderSessionDetails(session, report)}
-      </div>
-
-      ${renderDetailPage(session, report)}
+      ${renderInfoModal()}
 
       ${renderFooter(session, report)}
 
@@ -1474,8 +1775,7 @@
       </div>
     `;
 
-    const disposeTabs = bindTabs(root);
-    const disposeModals = bindModals(root);
+    const disposeModals = bindInfoModal(root);
     const disposeAudio = bindAudio(root, session);
 
     root.querySelector("#downloadJson").addEventListener("click", () => {
@@ -1491,7 +1791,6 @@
     return function disposeResults() {
       disposeAudio();
       disposeModals();
-      disposeTabs();
       root.classList.remove("results-screen");
       if (root.parentElement) root.parentElement.classList.remove("screen-wide");
     };

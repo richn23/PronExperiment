@@ -521,6 +521,59 @@
   }
 
   // =============================================================================
+  // Hear it → Say it — pairs Task 3 (perception) with Task 4 (repeat)
+  // Each row: one contrast, hear correct (T3 tap), say correct (T4 accuracy ≥ 70)
+  // =============================================================================
+
+  function computeHearSay(session) {
+    const pairs = (session.data && session.data.pairs) || [];
+    const byId = new Map(pairs.map((p) => [p.id, p]));
+
+    // T3 map: contrast → { label, wordA, wordB, hearCorrect }
+    const t3Map = new Map();
+    for (const r of (session.task3 && session.task3.results || [])) {
+      const pair = byId.get(r.pair_id);
+      const label = pair && pair.contrast_label
+        ? pair.contrast_label
+        : (pair ? `${pair.word_a} / ${pair.word_b}` : r.contrast);
+      t3Map.set(r.contrast, {
+        label,
+        wordA: pair ? pair.word_a : null,
+        wordB: pair ? pair.word_b : null,
+        hearCorrect: typeof r.correct === "boolean" ? r.correct : null,
+      });
+    }
+
+    // T4 map: contrast → sayCorrect (target word accuracy ≥ 70)
+    const t4Map = new Map();
+    for (const r of (session.task4 && session.task4.results || [])) {
+      const acc = task4TargetWordAccuracy(r);
+      t4Map.set(r.contrast, typeof acc === "number" ? acc >= 70 : null);
+    }
+
+    // Merge (T3 drives order; add any T4-only rows at end)
+    const rows = [];
+    const seen = new Set();
+    for (const [contrast, t3] of t3Map) {
+      seen.add(contrast);
+      rows.push({
+        contrast,
+        label: t3.label,
+        wordA: t3.wordA,
+        wordB: t3.wordB,
+        hearCorrect: t3.hearCorrect,
+        sayCorrect: t4Map.has(contrast) ? t4Map.get(contrast) : null,
+      });
+    }
+    for (const [contrast, sayCorrect] of t4Map) {
+      if (!seen.has(contrast)) {
+        rows.push({ contrast, label: contrast, wordA: null, wordB: null, hearCorrect: null, sayCorrect });
+      }
+    }
+    return rows;
+  }
+
+  // =============================================================================
   // Composite — re-distributes weights over available dimensions so a missing
   // dimension doesn't deflate the overall score.
   // =============================================================================
@@ -716,6 +769,7 @@
       phonemeLabelsAvailable,
       listening: computeListening(session),
       freeSpeech: computeFreeSpeech(session),
+      hearSay: computeHearSay(session),
       // Diagnostic block (used by scoring.test.html and the dimensions card)
       diagnostics: {
         phonemesScored: allPhAcc.length,

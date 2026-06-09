@@ -1340,3 +1340,136 @@ audio {
 .ph-legend-item { display: inline-flex; align-items: center; gap: 6px; }
 .ph-sw { width: 14px; height: 14px; border-radius: 4px; border: 1px solid; }
 
+/* ── Tiered report redesign ──────────────────────────────────────────────── */
+
+/* Hero */
+.results-screen .hero {
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  color: #fff;
+  border-radius: 16px;
+  padding: 30px 22px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(59,130,246,0.2);
+  border: none;
+}
+.results-screen .hero .label { font-size: 13px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.results-screen .hero .score { font-size: 62px; font-weight: 700; line-height: 1; }
+.results-screen .hero .score span { font-size: 24px; opacity: 0.8; }
+.results-screen .hero .band { font-size: 18px; font-weight: 500; margin-top: 6px; }
+.results-screen .hero .one-liner { font-size: 15px; opacity: 0.95; max-width: 520px; margin: 14px auto 0; line-height: 1.6; }
+
+/* Generic card */
+.results-screen .card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.results-screen .card h2 {
+  font-size: 13px;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+
+/* Radar profile */
+.results-screen .profile { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.results-screen .profile svg { flex: 0 0 280px; max-width: 100%; }
+.results-screen .axes { flex: 1 1 180px; display: flex; flex-direction: column; gap: 10px; min-width: 160px; }
+.results-screen .axis { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+.results-screen .axis .nm { color: #374151; display: inline-flex; align-items: center; }
+.results-screen .axis .vl { font-weight: 700; font-variant-numeric: tabular-nums; }
+.results-screen .iq {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #E5E7EB; color: #6B7280; font-size: 11px; font-weight: 700;
+  font-style: italic; font-family: Georgia, serif;
+  cursor: pointer; border: none; margin-left: 8px;
+  line-height: 1;
+}
+.results-screen .iq:hover { background: #d1d5db; color: #374151; }
+
+/* Two-column summary panel */
+.results-screen .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 520px) { .results-screen .two-col { grid-template-columns: 1fr; } }
+.results-screen .list-clean { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 0; margin: 0; }
+.results-screen .list-clean li { font-size: 14px; color: #1f2937; display: flex; gap: 8px; align-items: flex-start; }
+
+/* Tier collapsibles */
+.results-screen details.tier {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.results-screen details.tier > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 20px;
+  font-weight: 600;
+  font-size: 15px;
+  color: #111827;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+.results-screen details.tier > summary::-webkit-details-marker { display: none; }
+.results-screen details.tier > summary .chev { color: var(--accent); font-size: 13px; font-weight: 600; }
+.results-screen details.tier[open] > summary { border-bottom: 1px solid #e5e7eb; }
+.results-screen .tier-body { padding: 20px; display: flex; flex-direction: column; gap: 24px; }
+
+/* Tables */
+.results-screen table.t { width: 100%; border-collapse: collapse; font-size: 14px; }
+.results-screen table.t th,
+.results-screen table.t td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #eef2f7; }
+.results-screen table.t th { color: #6B7280; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+.results-screen table.t td.num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.results-screen .ok { color: #10B981; font-weight: 700; }
+.results-screen .no { color: #EF4444; font-weight: 700; }
+.results-screen .result-note {
+  margin-top: 12px; font-size: 14px; color: #374151;
+  background: #f0f9ff; border-left: 3px solid #3B82F6;
+  padding: 10px 12px; border-radius: 4px; line-height: 1.5;
+}
+
+/* Compare (words vs sentences) — tier version */
+.results-screen .tier-body .compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; }
+.results-screen .tier-body .compare .box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; }
+.results-screen .tier-body .compare .box .l { font-size: 12px; color: #6B7280; text-transform: uppercase; }
+.results-screen .tier-body .compare .box .n { font-size: 26px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.results-screen .tier-body .muted { font-size: 13px; color: #6B7280; line-height: 1.6; }
+
+/* Tier 4 dimension breakdown */
+.results-screen .dim-break { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 10px; background: #f9fafb; }
+.results-screen .dim-break .top { display: flex; justify-content: space-between; font-weight: 600; color: #111827; }
+.results-screen .dim-break .made { font-size: 13px; color: #6B7280; margin-top: 4px; }
+.results-screen .tier-body .formula {
+  background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 12px; font-size: 13px;
+  font-family: ui-monospace, Menlo, monospace;
+  color: #374151; line-height: 1.7; margin-top: 8px;
+}
+
+/* Info modal */
+.results-screen .modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: rgba(15,23,42,0.5); z-index: 50;
+  align-items: center; justify-content: center; padding: 20px;
+}
+.results-screen .modal-bg.open { display: flex; }
+.results-screen .modal-box {
+  background: #fff; border-radius: 14px; padding: 22px;
+  max-width: 380px; width: 100%;
+}
+.results-screen .modal-box h3 { font-size: 18px; margin-bottom: 10px; color: #111827; }
+.results-screen .modal-x {
+  margin-top: 16px; width: 100%; padding: 11px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 15px;
+}
+
