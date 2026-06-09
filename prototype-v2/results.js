@@ -1741,12 +1741,17 @@
 
       ${renderSummaryPanel(report)}
 
+      ${renderSections(report)}
+
       <details class="tier" id="tierLearning">
         <summary><span>Show me more</span><span class="chev">Learning layer &#x25BE;</span></summary>
         <div class="tier-body">
           ${renderTaskTable(report)}
           ${renderHearSay(report)}
+          ${renderListening(report)}
           ${renderSentenceStability(report)}
+          ${renderStrengths(report)}
+          ${renderFreeSpeech(report)}
         </div>
       </details>
 
@@ -1762,6 +1767,8 @@
         <summary><span>How is my score calculated?</span><span class="chev">Advanced &#x25BE;</span></summary>
         <div class="tier-body">
           ${renderDimBreakdown(report)}
+          ${renderDimensions(report)}
+          ${renderSessionDetails(session, report)}
         </div>
       </details>
 
