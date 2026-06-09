@@ -300,14 +300,7 @@
     return accs.length ? mean(accs) : null;
   }
 
-  function sectionTask3Heard(session) {
-    const rs = (session.task3.results || []).filter((r) => typeof r.round1_correct === "boolean");
-    if (!rs.length) return null;
-    const correct = rs.filter((r) => r.round1_correct).length;
-    return (correct / rs.length) * 100;
-  }
-
-  // For Task 3 "Said" we want the accuracy of the target word inside the
+  // For Task 3 we want the accuracy of the target word inside the
   // carrier sentence (not the whole sentence — which is mostly the carrier).
   function task3TargetWordAccuracy(r) {
     const target = (r.heardWord || "").toLowerCase().replace(/[^\w']/g, "");
@@ -326,7 +319,7 @@
     return sentenceAccuracy(r.azure);
   }
 
-  function sectionTask3Said(session) {
+  function sectionTask3(session) {
     const accs = (session.task3.results || []).map(task3TargetWordAccuracy).filter(isNum);
     return accs.length ? mean(accs) : null;
   }
@@ -457,7 +450,7 @@
   }
 
   // =============================================================================
-  // Listening table — one row per Task 3 item, with both pair words for context
+  // Listen-and-repeat table — one row per Task 3 item
   // =============================================================================
 
   function computeListening(session) {
@@ -470,13 +463,8 @@
         pair_id: r.pair_id,
         contrast: r.contrast,
         contrast_label: pair ? pair.contrast_label : null,
-        word_a: pair ? pair.word_a : null,
-        word_b: pair ? pair.word_b : null,
         heardWord: r.heardWord,
-        otherWord: pair
-          ? (r.heardWord === pair.word_a ? pair.word_b : pair.word_a)
-          : null,
-        round1_correct: r.round1_correct,
+        listensUsed: r.listensUsed,
       };
     });
   }
@@ -664,15 +652,9 @@
     const sectionScores = {
       task1: qualityFlags.task1.flagged ? null : sectionTask1(session),
       task2: qualityFlags.task2.flagged ? null : sectionTask2(session),
-      task3Heard: sectionTask3Heard(session),
-      task3Said: qualityFlags.task3.flagged ? null : sectionTask3Said(session),
+      task3: qualityFlags.task3.flagged ? null : sectionTask3(session),
       task4: qualityFlags.task4.flagged ? null : sectionTask4(session),
     };
-
-    // Perception / production helpers (used by listening narrative)
-    const t3Results = (session.task3 && session.task3.results) || [];
-    const perceptionCorrect = t3Results.filter((r) => r.round1_correct === true).length;
-    const perceptionTotal = t3Results.filter((r) => typeof r.round1_correct === "boolean").length;
 
     // Strengths and focus areas are Task 1 driven — suppress when T1 is flagged.
     const strengths = qualityFlags.task1.flagged ? [] : computeStrengths(session);
@@ -698,8 +680,7 @@
       sectionScores: {
         task1: roundOrNull(sectionScores.task1),
         task2: roundOrNull(sectionScores.task2),
-        task3Heard: roundOrNull(sectionScores.task3Heard),
-        task3Said: roundOrNull(sectionScores.task3Said),
+        task3: roundOrNull(sectionScores.task3),
         task4: roundOrNull(sectionScores.task4),
       },
       qualityFlags,
@@ -711,10 +692,6 @@
       phonemeLabelsAvailable,
       listening: computeListening(session),
       freeSpeech: computeFreeSpeech(session),
-      perception: {
-        correct: perceptionCorrect,
-        total: perceptionTotal,
-      },
       // Diagnostic block (used by scoring.test.html and the dimensions card)
       diagnostics: {
         phonemesScored: allPhAcc.length,

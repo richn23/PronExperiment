@@ -237,7 +237,7 @@
 
     const t1Desc = `${c.task1 || 0} word${c.task1 === 1 ? "" : "s"} read aloud`;
     const t2Desc = `${c.task2 || 0} sentence${c.task2 === 1 ? "" : "s"} and groups`;
-    const t3Desc = `${report.perception.correct}/${report.perception.total} right · ${c.task3 || 0} repeats scored`;
+    const t3Desc = `${c.task3 || 0} sentence${c.task3 === 1 ? "" : "s"} repeated`;
     const t4Desc = sec.task4 == null
       ? (c.task4 ? "Not enough usable data" : "No data this session")
       : `${c.task4} prompt${c.task4 === 1 ? "" : "s"}`;
@@ -248,13 +248,9 @@
     const t2Tile = qf.task2 && qf.task2.flagged
       ? tileFlagged("Sentences", qf.task2)
       : tile("Sentences", sec.task2, t2Desc);
-    const t3Tile = tileSplit(
-      "Minimal pairs",
-      sec.task3Heard,
-      sec.task3Said,
-      t3Desc,
-      qf.task3 && qf.task3.flagged
-    );
+    const t3Tile = qf.task3 && qf.task3.flagged
+      ? tileFlagged("Listen & repeat", qf.task3)
+      : tile("Listen & repeat", sec.task3, t3Desc);
     const t4Tile = qf.task4 && qf.task4.flagged
       ? tileFlagged("Free speech", qf.task4)
       : tile("Free speech", sec.task4, t4Desc);
@@ -438,7 +434,7 @@
   }
 
   // =============================================================================
-  // Section 6 — Listening (Task 3 round 1)
+  // Section 6 — Listen and repeat (Task 3)
   // =============================================================================
 
   function renderListening(report) {
@@ -446,58 +442,29 @@
     if (!items.length) {
       return `
         <div class="report-card">
-          <h2>How well you heard the differences</h2>
-          <p class="lead">No listening data this session.</p>
+          <h2>Listen and repeat</h2>
+          <p class="lead">No data this session.</p>
         </div>
       `;
     }
 
-    const correct = report.perception.correct;
-    const total = report.perception.total;
-
     const rows = items.map((it) => {
-      const indicator =
-        it.round1_correct === true ? `<span class="check">✓ correct</span>`
-        : it.round1_correct === false ? `<span class="cross">✗ missed</span>`
+      const listens = it.listensUsed != null
+        ? `<span class="dash">${it.listensUsed} listen${it.listensUsed === 1 ? "" : "s"}</span>`
         : `<span class="dash">—</span>`;
-
-      const wordsBit = it.word_a && it.word_b
-        ? ` <span class="pair-words">(${esc(it.word_a)} / ${esc(it.word_b)})</span>`
-        : "";
-
-      // Bold the row if it's the (single) miss to draw the eye, like the mockup.
-      const isOnlyMiss = total - correct === 1 && it.round1_correct === false;
-      const labelHtml = isOnlyMiss
-        ? `<strong>${esc(it.contrast)}</strong>${wordsBit}`
-        : `${esc(it.contrast)}${wordsBit}`;
-
       return `
         <div class="pair-row">
-          <span class="label">${labelHtml}</span>
-          ${indicator}
+          <span class="label">${esc(it.contrast_label || it.contrast)}</span>
+          ${listens}
         </div>
       `;
     }).join("");
 
-    let narrative = "";
-    if (total === correct && total > 0) {
-      narrative = `<div class="note">Perfect score on perception — you heard every contrast we tested.</div>`;
-    } else if (total - correct === 1) {
-      const miss = items.find((i) => i.round1_correct === false);
-      if (miss) {
-        narrative = `<div class="note">Your only miss (${esc(miss.contrast)}) suggests this contrast might be worth practising.</div>`;
-      }
-    } else if (total - correct >= 2) {
-      const misses = items.filter((i) => i.round1_correct === false).slice(0, 3).map((m) => m.contrast);
-      narrative = `<div class="note">You missed ${total - correct} of ${total} — focus areas would be ${misses.join(", ")}.</div>`;
-    }
-
     return `
       <div class="report-card">
-        <h2>How well you heard the differences</h2>
-        <p class="lead">You got <strong>${correct} out of ${total}</strong> right when listening for similar sounds.</p>
+        <h2>Listen and repeat</h2>
+        <p class="lead">${items.length} sentence${items.length === 1 ? "" : "s"} — one per contrast tested. Pronunciation scored against the full sentence.</p>
         ${rows}
-        ${narrative}
       </div>
     `;
   }
@@ -1108,7 +1075,7 @@
     const parts = [];
     if (c.task1) parts.push(`${c.task1} word${c.task1 === 1 ? "" : "s"}`);
     if (c.task2) parts.push(`${c.task2} sentence${c.task2 === 1 ? "" : "s"}`);
-    if (c.task3) parts.push(`${c.task3} minimal pair${c.task3 === 1 ? "" : "s"}`);
+    if (c.task3) parts.push(`${c.task3} listen-and-repeat`);
     if (c.task4) parts.push(`${c.task4} free prompt${c.task4 === 1 ? "" : "s"}`);
     return `
       <div class="report-footer">
