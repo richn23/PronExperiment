@@ -1321,3 +1321,22 @@ audio {
 .verdict-ok { background: #D1FAE5; color: #065F46; }
 .verdict-off { background: #FEE2E2; color: #991B1B; }
 
+/* ── Phoneme chart ──────────────────────────────────────────────────────────── */
+.ph-group { margin-bottom: 14px; }
+.ph-gl { font-size: 12px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.ph-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ph { width: 48px; height: 48px; border-radius: 10px; background: #f3f4f6; border: 1px solid #e5e7eb;
+      display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px;
+      color: #374151; cursor: pointer; user-select: none; transition: transform .08s ease, background .15s ease; }
+.ph:hover { background: #e5e7eb; }
+.ph:active { transform: scale(0.94); }
+.ph.struggle { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+.ph.clear { background: #dcfce7; border-color: #bbf7d0; color: #15803d; }
+.ph.playing { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ph-detail { margin-top: 14px; font-size: 14px; color: #374151; min-height: 20px; }
+.ph-detail b { color: #111827; }
+.ph-note { color: #b91c1c; margin-left: 6px; }
+.ph-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 12px; color: #6B7280; }
+.ph-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.ph-sw { width: 14px; height: 14px; border-radius: 4px; border: 1px solid; }
+

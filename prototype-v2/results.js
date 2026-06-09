@@ -72,6 +72,26 @@
 
   const DIM_ORDER = ["phoneme", "fluency", "stress", "consistency", "sentenceStability"];
 
+  const PHONEME_GROUPS = [
+    { label: "Short vowels",            codes: ["IH","EH","AE","AH","AA","AO","UH"] },
+    { label: "Long vowels & diphthongs",codes: ["IY","EY","AY","OW","AW","OY","UW","ER"] },
+    { label: "Stops",                   codes: ["P","B","T","D","K","G"] },
+    { label: "Fricatives",              codes: ["F","V","TH","DH","S","Z","SH","ZH","HH"] },
+    { label: "Affricates",              codes: ["CH","JH"] },
+    { label: "Nasals",                  codes: ["M","N","NG"] },
+    { label: "Approximants",            codes: ["L","R","W","Y"] },
+  ];
+
+  const PHONEME_EXAMPLES = {
+    IH:"ship", EH:"bet", AE:"cat", AH:"cup", AA:"father", AO:"thought", UH:"book",
+    IY:"green", EY:"day", AY:"five", OW:"gold", AW:"house", OY:"boy", UW:"food", ER:"her",
+    P:"pat", B:"bat", T:"top", D:"day", K:"cat", G:"go",
+    F:"fan", V:"very", TH:"think", DH:"they", S:"see", Z:"zoo", SH:"ship", ZH:"measure", HH:"house",
+    CH:"chair", JH:"judge",
+    M:"milk", N:"no", NG:"sing",
+    L:"light", R:"right", W:"wine", Y:"yes",
+  };
+
   // =============================================================================
   // Small render helpers
   // =============================================================================
@@ -441,6 +461,41 @@
         ${warning}
       </div>
     `;
+  }
+
+  // =============================================================================
+  // Section 5b — Phoneme chart ("English sounds — your map")
+  // =============================================================================
+
+  function renderPhonemeChart(report) {
+    const struggleSet = new Set(
+      (report.focusAreas || []).map((g) => g.code.toUpperCase())
+    );
+
+    const groupsHtml = PHONEME_GROUPS.map((grp) => {
+      const tiles = grp.codes.map((code) => {
+        const cls = struggleSet.has(code) ? "ph struggle" : "ph";
+        return `<button class="${cls}" type="button" data-ph="${esc(code)}" aria-label="${esc(code)}">${esc(code)}</button>`;
+      }).join("");
+      return `
+      <div class="ph-group">
+        <div class="ph-gl">${esc(grp.label)}</div>
+        <div class="ph-row">${tiles}</div>
+      </div>
+    `;
+    }).join("");
+
+    return `
+    <div class="report-card">
+      <h2>English sounds — your map</h2>
+      ${groupsHtml}
+      <div class="ph-detail" id="phDetail"></div>
+      <div class="ph-legend">
+        <span class="ph-legend-item"><span class="ph-sw struggle" style="background:#fee2e2;border-color:#fca5a5;"></span>Focus this session</span>
+        <span class="ph-legend-item"><span class="ph-sw" style="background:#f3f4f6;border-color:#e5e7eb;"></span>Not tested</span>
+      </div>
+    </div>
+  `;
   }
 
   // =============================================================================
@@ -1231,6 +1286,59 @@
       });
     });
 
+    // Phoneme chart — tap any tile to hear its example word
+    const phDetailEl = root.querySelector("#phDetail");
+    root.querySelectorAll(".ph[data-ph]").forEach((tile) => {
+      tile.addEventListener("click", async () => {
+        const code = tile.getAttribute("data-ph");
+        const word = PHONEME_EXAMPLES[code] || code;
+        const isStruggle = tile.classList.contains("struggle");
+
+        // Update detail line immediately (before audio loads)
+        if (phDetailEl) {
+          const note = isStruggle
+            ? `<span class="ph-note">You found this sound difficult this session.</span>`
+            : "";
+          phDetailEl.innerHTML = `<b>${esc(code)}</b> — as in "<b>${esc(word)}</b>"${note}`;
+        }
+
+        // Lazy TTS
+        if (!ttsCache.has(word)) {
+          if (!global.AzureSpeech || !global.AzureSpeech.synthesizeToBlob) return;
+          tile.classList.add("playing");
+          try {
+            const blob = await global.AzureSpeech.synthesizeToBlob(word);
+            ttsCache.set(word, blob);
+          } catch (err) {
+            console.warn("Phoneme TTS failed:", err);
+            tile.classList.remove("playing");
+            return;
+          }
+        }
+
+        const blob = ttsCache.get(word);
+        const url = urlForBlob(`__ph__:${word}`, blob);
+        let audio = audioByButton.get(tile);
+        if (!audio) {
+          audio = new Audio(url);
+          audioByButton.set(tile, audio);
+        } else {
+          audio.src = url;
+        }
+
+        tile.classList.add("playing");
+        try { audio.currentTime = 0; } catch (_) {}
+
+        // Track "active" so the playing class is removed on end
+        stopActive();
+        activeAudio = audio;
+        activeButton = tile;
+        audio.onended = () => { if (activeAudio === audio) { stopActive(); tile.classList.remove("playing"); } };
+        audio.onerror = () => { if (activeAudio === audio) { stopActive(); tile.classList.remove("playing"); } };
+        audio.play().catch(() => { stopActive(); tile.classList.remove("playing"); });
+      });
+    });
+
     return function disposeAudio() {
       stopActive();
       for (const url of objectUrls.values()) {
@@ -1344,6 +1452,8 @@
         ${renderStrengths(report)}
 
         ${renderFocusAreas(report, recordingMap)}
+
+        ${renderPhonemeChart(report)}
 
         ${renderListening(report)}
 
