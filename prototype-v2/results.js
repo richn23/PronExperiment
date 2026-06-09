@@ -216,6 +216,17 @@
 
   function renderProfile(report) {
     const rd = radarDims(report);
+
+    // If every dim is null (fully unscored session), skip the radar entirely.
+    if (Object.values(rd).every((v) => v === null)) {
+      return `
+        <div class="card">
+          <h2>Your pronunciation profile</h2>
+          <p class="muted">Not enough data this session to build a profile — recording issues may have prevented scoring.</p>
+        </div>
+      `;
+    }
+
     const CX = 160, CY = 150, R = 110;
     const axes = [
       { key: "sounds",    angle: 0,   label: "Sounds",    x: CX,       y: CY - R - 22, anchor: "middle" },
@@ -635,8 +646,7 @@
       ? `${esc(group.label.includes("(") ? group.code : group.label)} — as in "${esc(group.example_word)}"`
       : esc(group.label);
 
-    const recButtons = group.examples.map((ex, i) => {
-      const id = `${group.code}-${i}-${ex.word_id || ex.word}`;
+    const recButtons = group.examples.map((ex) => {
       const hasAudio = recordingMap.has(ex.word_id);
       const disabledAttr = hasAudio ? "" : "disabled";
       return `
@@ -841,7 +851,7 @@
           <div class="box"><div class="l">Sentences</div><div class="n ${cls2}">${fmt(t2)}</div></div>
           <div class="box"><div class="l">Change</div><div class="n ${diffCls}">${esc(diffStr)}</div></div>
         </div>
-        <p class="muted" style="margin-top:10px">${esc(note.replace(/<\/?strong>/g, ""))}</p>
+        <p class="muted" style="margin-top:10px">${note}</p>
       </div>
     `;
   }

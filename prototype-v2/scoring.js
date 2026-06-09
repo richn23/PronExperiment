@@ -139,7 +139,9 @@
       if (/^[.?!,\s]*$/.test(transcript)) return true;
       if (typeof azure.confidence === "number" && azure.confidence < MIN_CONFIDENCE) return true;
       // STT was usable; recurse into PA if present so a flagged PA item is
-      // still excluded from phoneme/fluency dims.
+      // still excluded from phoneme/fluency dims. If PA itself errored, the
+      // item has no usable pronunciation data — treat as unscored.
+      if (azure.paError) return true;
       return azure.paResult ? isUnscored(azure.paResult) : false;
     }
 
@@ -497,10 +499,7 @@
 
     const items = usable.map((r) => {
       const pa = paBlock(r.azure);
-      const transcriptText =
-        (r.azure && r.azure.transcript) ||
-        (r.azure && r.azure.paResult && r.azure.paResult.text) ||
-        "";
+      const transcriptText = (r.azure && r.azure.transcript) || "";
       return {
         prompt_text: r.prompt_text,
         prompt_kind: r.prompt_kind,
@@ -545,8 +544,10 @@
     }
 
     // T4 map: contrast → sayCorrect (target word accuracy ≥ 70)
+    // Audio-load errors count as false (attempted, failed) not null (no attempt).
     const t4Map = new Map();
     for (const r of (session.task4 && session.task4.results || [])) {
+      if (r.audioError) { t4Map.set(r.contrast, false); continue; }
       const acc = task4TargetWordAccuracy(r);
       t4Map.set(r.contrast, typeof acc === "number" ? acc >= 70 : null);
     }

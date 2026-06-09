@@ -19,7 +19,7 @@
 // =============================================================================
 
 const __cfg = (typeof window !== "undefined" && window.AZE_CONFIG) || {};
-const AZURE_KEY = __cfg.AZURE_KEY || "6SyJSlI2UxE5RbRGEyj1oDnJCdppCcY63ir0PwRmOdR5sAOQUi5OJQQJ99CEACYeBjFXJ3w3AAAYACOGToIT";
+const AZURE_KEY = __cfg.AZURE_KEY || ""; // key must come from local-config.js — no hardcoded fallback
 const AZURE_REGION = __cfg.AZURE_REGION || "eastus";
 
 // =============================================================================
