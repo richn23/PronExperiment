@@ -234,13 +234,20 @@
     const c = report.counts;
     const sec = report.sectionScores;
     const qf = report.qualityFlags || {};
+    const perc = report.perception || {};
 
     const t1Desc = `${c.task1 || 0} word${c.task1 === 1 ? "" : "s"} read aloud`;
-    const t2Desc = `${c.task2 || 0} sentence${c.task2 === 1 ? "" : "s"} and groups`;
-    const t3Desc = `${c.task3 || 0} sentence${c.task3 === 1 ? "" : "s"} repeated`;
-    const t4Desc = sec.task4 == null
+    const t2Desc = `${c.task2 || 0} sentence${c.task2 === 1 ? "" : "s"} read aloud`;
+    // Task 3 — perception (no recordings); show correct/total instead of item count
+    const t3Desc = perc.total > 0
+      ? `${perc.correct} of ${perc.total} correct`
+      : `${c.task3 || 0} minimal pair${c.task3 === 1 ? "" : "s"}`;
+    const t4Desc = qf.task4 && qf.task4.flagged
       ? (c.task4 ? "Not enough usable data" : "No data this session")
-      : `${c.task4} prompt${c.task4 === 1 ? "" : "s"}`;
+      : `${c.task4 || 0} sentence${c.task4 === 1 ? "" : "s"} repeated`;
+    const t5Desc = sec.task5 == null
+      ? (c.task5 ? "Not enough usable data" : "No data this session")
+      : `${c.task5} prompt${c.task5 === 1 ? "" : "s"}`;
 
     const t1Tile = qf.task1 && qf.task1.flagged
       ? tileFlagged("Single words", qf.task1)
@@ -248,12 +255,14 @@
     const t2Tile = qf.task2 && qf.task2.flagged
       ? tileFlagged("Sentences", qf.task2)
       : tile("Sentences", sec.task2, t2Desc);
-    const t3Tile = qf.task3 && qf.task3.flagged
-      ? tileFlagged("Listen & repeat", qf.task3)
-      : tile("Listen & repeat", sec.task3, t3Desc);
+    // Task 3 is perception — no recording quality flag applies
+    const t3Tile = tile("Minimal pairs", sec.task3, t3Desc);
     const t4Tile = qf.task4 && qf.task4.flagged
-      ? tileFlagged("Free speech", qf.task4)
-      : tile("Free speech", sec.task4, t4Desc);
+      ? tileFlagged("Listen & repeat", qf.task4)
+      : tile("Listen & repeat", sec.task4, t4Desc);
+    const t5Tile = qf.task5 && qf.task5.flagged
+      ? tileFlagged("Free speech", qf.task5)
+      : tile("Free speech", sec.task5, t5Desc);
 
     return `
       <div class="report-card">
@@ -263,6 +272,7 @@
           ${t2Tile}
           ${t3Tile}
           ${t4Tile}
+          ${t5Tile}
         </div>
       </div>
     `;
@@ -442,19 +452,30 @@
     if (!items.length) {
       return `
         <div class="report-card">
-          <h2>Listen and repeat</h2>
+          <h2>How well you heard the differences</h2>
           <p class="lead">No data this session.</p>
         </div>
       `;
     }
 
+    const correctCount = items.filter((it) => it.correct === true).length;
     const rows = items.map((it) => {
+      const icon = it.correct === true
+        ? `<span class="verdict-icon verdict-ok">✓</span>`
+        : it.correct === false
+          ? `<span class="verdict-icon verdict-off">✗</span>`
+          : `<span class="verdict-icon">—</span>`;
+      const heard = it.chosenWord
+        ? `heard <strong>${esc(it.chosenWord)}</strong>`
+        : "no answer";
       const listens = it.listensUsed != null
         ? `<span class="dash">${it.listensUsed} listen${it.listensUsed === 1 ? "" : "s"}</span>`
-        : `<span class="dash">—</span>`;
+        : "";
       return `
         <div class="pair-row">
+          ${icon}
           <span class="label">${esc(it.contrast_label || it.contrast)}</span>
+          <span class="muted">${heard}</span>
           ${listens}
         </div>
       `;
@@ -462,8 +483,8 @@
 
     return `
       <div class="report-card">
-        <h2>Listen and repeat</h2>
-        <p class="lead">${items.length} sentence${items.length === 1 ? "" : "s"} — one per contrast tested. Pronunciation scored against the full sentence.</p>
+        <h2>How well you heard the differences</h2>
+        <p class="lead">${items.length} minimal pair${items.length === 1 ? "" : "s"} — ${correctCount} of ${items.length} identified correctly.</p>
         ${rows}
       </div>
     `;
@@ -675,29 +696,30 @@
   function computeSessionStats(session) {
     const t1 = session.task1.results || [];
     const t2 = session.task2.results || [];
-    const t3 = session.task3.results || []; // durationMs here is Round 2 only
-    const t4 = session.task4.results || [];
+    // Task 3 is perception-only (tap buttons) — no recordings or word counts.
+    const t4 = (session.task4 && session.task4.results) || [];
+    const t5 = (session.task5 && session.task5.results) || [];
 
     const t1Words = t1.reduce((sum, r) => sum + resultWords(r, r.word), 0);
     const t2Words = t2.reduce((sum, r) => sum + resultWords(r, r.text), 0);
-    const t3Words = t3.reduce((sum, r) => sum + resultWords(r, r.target_word), 0);
-    const t4Words = t4.reduce((sum, r) => sum + resultWords(r, ""), 0);
+    const t4Words = t4.reduce((sum, r) => sum + resultWords(r, r.reference || ""), 0);
+    const t5Words = t5.reduce((sum, r) => sum + resultWords(r, ""), 0);
 
     const t1Time = t1.reduce((sum, r) => sum + durMs(r), 0);
     const t2Time = t2.reduce((sum, r) => sum + durMs(r), 0);
-    const t3Time = t3.reduce((sum, r) => sum + durMs(r), 0);
     const t4Time = t4.reduce((sum, r) => sum + durMs(r), 0);
+    const t5Time = t5.reduce((sum, r) => sum + durMs(r), 0);
 
-    const readingWords = t1Words + t2Words + t3Words;
-    const readingTime = t1Time + t2Time + t3Time;
-    const totalWords = readingWords + t4Words;
-    const totalTime = readingTime + t4Time;
+    const readingWords = t1Words + t2Words + t4Words;
+    const readingTime = t1Time + t2Time + t4Time;
+    const totalWords = readingWords + t5Words;
+    const totalTime = readingTime + t5Time;
 
     return {
       totalWords,
       totalTime,
       readingRate: wpm(readingWords, readingTime),
-      freeRate: wpm(t4Words, t4Time),
+      freeRate: wpm(t5Words, t5Time),
       hintsUsed: (session.task1.hintLog || []).length,
       hintsTotal: 15, // 15 scored words in Task 1 (practice excluded)
     };
@@ -732,7 +754,7 @@
           <div class="section-tile">
             <div class="name">Words spoken</div>
             <div class="score-num" style="color:#1F2937;">${s.totalWords}</div>
-            <div class="desc">across all 4 tasks</div>
+            <div class="desc">across all 5 tasks</div>
           </div>
           <div class="section-tile">
             <div class="name">Speaking time</div>
@@ -761,7 +783,7 @@
           ${unscoredTile}
         </div>
         <div class="note" style="margin-top:16px;">
-          <strong>Reading vs free speech:</strong> the reading rate covers Tasks 1, 2, and 3 — all script-based, so the words are chosen for you. The free rate (Task 4) is when you pick your own words, which is the more useful diagnostic for fluency. Native English conversational pace is roughly 150–180 wpm; read-aloud and L2 free speech are naturally slower.
+          <strong>Reading vs free speech:</strong> the reading rate covers Tasks 1, 2, and 4 — all script-based, so the words are chosen for you. Task 3 (minimal pairs) is a listening task with no speaking, so it doesn't count here. The free rate (Task 5) is when you pick your own words, which is the more useful diagnostic for fluency. Native English conversational pace is roughly 150–180 wpm; read-aloud and L2 free speech are naturally slower.
         </div>
       </div>
     `;
@@ -1075,8 +1097,9 @@
     const parts = [];
     if (c.task1) parts.push(`${c.task1} word${c.task1 === 1 ? "" : "s"}`);
     if (c.task2) parts.push(`${c.task2} sentence${c.task2 === 1 ? "" : "s"}`);
-    if (c.task3) parts.push(`${c.task3} listen-and-repeat`);
-    if (c.task4) parts.push(`${c.task4} free prompt${c.task4 === 1 ? "" : "s"}`);
+    if (c.task3) parts.push(`${c.task3} minimal pair${c.task3 === 1 ? "" : "s"}`);
+    if (c.task4) parts.push(`${c.task4} listen-and-repeat`);
+    if (c.task5) parts.push(`${c.task5} free prompt${c.task5 === 1 ? "" : "s"}`);
     return `
       <div class="report-footer">
         Session run ${esc(date)} · ${parts.join(" · ")}
@@ -1381,6 +1404,7 @@
       task2: stripTask(session.task2),
       task3: stripTask(session.task3),
       task4: stripTask(session.task4),
+      task5: stripTask(session.task5),
       report,
     };
   }

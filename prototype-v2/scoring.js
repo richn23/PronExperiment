@@ -300,9 +300,16 @@
     return accs.length ? mean(accs) : null;
   }
 
-  // For Task 3 we want the accuracy of the target word inside the
+  // Task 3 — perception: % of minimal-pair identifications correct
+  function sectionTask3(session) {
+    const rs = (session.task3.results || []).filter((r) => typeof r.correct === "boolean");
+    if (!rs.length) return null;
+    return (rs.filter((r) => r.correct).length / rs.length) * 100;
+  }
+
+  // For Task 4 we want the accuracy of the target word inside the
   // carrier sentence (not the whole sentence — which is mostly the carrier).
-  function task3TargetWordAccuracy(r) {
+  function task4TargetWordAccuracy(r) {
     const target = (r.heardWord || "").toLowerCase().replace(/[^\w']/g, "");
     if (!target) return null;
     const words = wordsOf(r.azure);
@@ -319,13 +326,13 @@
     return sentenceAccuracy(r.azure);
   }
 
-  function sectionTask3(session) {
-    const accs = (session.task3.results || []).map(task3TargetWordAccuracy).filter(isNum);
+  function sectionTask4(session) {
+    const accs = (session.task4.results || []).map(task4TargetWordAccuracy).filter(isNum);
     return accs.length ? mean(accs) : null;
   }
 
-  function sectionTask4(session) {
-    const usable = (session.task4.results || []).filter((r) => {
+  function sectionTask5(session) {
+    const usable = (session.task5.results || []).filter((r) => {
       const pa = paBlock(r.azure);
       return pa && isNum(pa.PronScore);
     });
@@ -463,7 +470,11 @@
         pair_id: r.pair_id,
         contrast: r.contrast,
         contrast_label: pair ? pair.contrast_label : null,
-        heardWord: r.heardWord,
+        word_a: pair ? pair.word_a : null,
+        word_b: pair ? pair.word_b : null,
+        correctWord: r.correctWord,
+        chosenWord: r.chosenWord,
+        correct: r.correct,
         listensUsed: r.listensUsed,
       };
     });
@@ -474,7 +485,7 @@
   // =============================================================================
 
   function computeFreeSpeech(session) {
-    const results = session.task4.results || [];
+    const results = session.task5.results || [];
     if (!results.length) return { state: "absent" };
 
     const usable = results.filter((r) => {
@@ -540,6 +551,7 @@
       task2: (session.task2 && session.task2.results || []).length,
       task3: (session.task3 && session.task3.results || []).length,
       task4: (session.task4 && session.task4.results || []).length,
+      task5: (session.task5 && session.task5.results || []).length,
     };
 
     // ------------------------------------------------------------- Quality flags
@@ -548,13 +560,13 @@
     const qualityFlags = {
       task1: taskQuality(session.task1 && session.task1.results),
       task2: taskQuality(session.task2 && session.task2.results),
-      task3: taskQuality(session.task3 && session.task3.results),
+      // Task 3 is perception-only (no recordings) — not subject to audio quality flags.
       task4: taskQuality(session.task4 && session.task4.results),
+      task5: taskQuality(session.task5 && session.task5.results),
     };
 
-    // Whole-session is flagged when every task that had any items is flagged.
-    // (A test where Task 4 was skipped entirely shouldn't poison Tasks 1-3.)
-    const taskKeys = ["task1", "task2", "task3", "task4"];
+    // Whole-session is flagged when every scored task that had items is flagged.
+    const taskKeys = ["task1", "task2", "task4", "task5"];
     const tasksWithItems = taskKeys.filter((k) => qualityFlags[k].total > 0);
     const sessionFlagged =
       tasksWithItems.length > 0 && tasksWithItems.every((k) => qualityFlags[k].flagged);
@@ -567,19 +579,20 @@
     // are also dropped (nbest() returns null for them, so most helpers
     // already skip them, but explicit filtering keeps the iteration honest).
     function usable(taskKey) {
-      if (qualityFlags[taskKey].flagged) return [];
+      if (qualityFlags[taskKey] && qualityFlags[taskKey].flagged) return [];
       const t = session[taskKey];
       const rs = (t && t.results) || [];
       return rs.filter((r) => !isUnscored(r && r.azure));
     }
     const t1Usable = usable("task1");
     const t2Usable = usable("task2");
-    const t3Usable = usable("task3");
+    // Task 3 has no recordings — no usable list needed for phoneme dims.
     const t4Usable = usable("task4");
+    const t5Usable = usable("task5");
 
     // ------------------------------------------------------------- Phoneme accuracy
     const allPhAcc = [];
-    for (const list of [t1Usable, t2Usable, t3Usable, t4Usable]) {
+    for (const list of [t1Usable, t2Usable, t4Usable, t5Usable]) {
       for (const r of list) {
         const accs = phonemeAccuracies(wordsOf(r.azure));
         for (const a of accs) allPhAcc.push(a);
@@ -589,7 +602,7 @@
 
     // ------------------------------------------------------------- Fluency
     const fluencyScores = [];
-    for (const list of [t2Usable, t4Usable]) {
+    for (const list of [t2Usable, t5Usable]) {
       for (const r of list) {
         const pa = paBlock(r.azure);
         if (pa && isNum(pa.FluencyScore)) fluencyScores.push(pa.FluencyScore);
@@ -649,11 +662,17 @@
     // "couldn't score" message instead of a misleading number. Task 3 Heard
     // is recording-independent (it's button-tap perception), so it stays
     // available even when Task 3 audio is flagged.
+    // Task 3 perception score is independent of audio quality flags
+    const t3Results = (session.task3 && session.task3.results) || [];
+    const perceptionCorrect = t3Results.filter((r) => r.correct === true).length;
+    const perceptionTotal   = t3Results.filter((r) => typeof r.correct === "boolean").length;
+
     const sectionScores = {
       task1: qualityFlags.task1.flagged ? null : sectionTask1(session),
       task2: qualityFlags.task2.flagged ? null : sectionTask2(session),
-      task3: qualityFlags.task3.flagged ? null : sectionTask3(session),
+      task3: sectionTask3(session),  // perception % — no recording flag
       task4: qualityFlags.task4.flagged ? null : sectionTask4(session),
+      task5: qualityFlags.task5.flagged ? null : sectionTask5(session),
     };
 
     // Strengths and focus areas are Task 1 driven — suppress when T1 is flagged.
@@ -682,6 +701,11 @@
         task2: roundOrNull(sectionScores.task2),
         task3: roundOrNull(sectionScores.task3),
         task4: roundOrNull(sectionScores.task4),
+        task5: roundOrNull(sectionScores.task5),
+      },
+      perception: {
+        correct: perceptionCorrect,
+        total:   perceptionTotal,
       },
       qualityFlags,
       unscoredTotal,

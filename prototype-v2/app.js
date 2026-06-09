@@ -24,6 +24,7 @@ const SESSION = {
   task2: { selected: [], results: [] },
   task3: { selected: [], results: [] },
   task4: { selected: [], results: [] },
+  task5: { selected: [], results: [] },
   scores: null,
 };
 
@@ -482,7 +483,8 @@ registerScreen("DEBUG_AUDIO", (root, next) => {
 registerScreen("T1_INTRO", (root, next) => Task1.run(root, SESSION, () => next("T2_INTRO")));
 registerScreen("T2_INTRO", (root, next) => Task2.run(root, SESSION, () => next("T3_INTRO")));
 registerScreen("T3_INTRO", (root, next) => Task3.run(root, SESSION, () => next("T4_INTRO")));
-registerScreen("T4_INTRO", (root, next) => Task4.run(root, SESSION, () => next("ANALYSING")));
+registerScreen("T4_INTRO", (root, next) => Task4.run(root, SESSION, () => next("T5_INTRO")));
+registerScreen("T5_INTRO", (root, next) => Task5.run(root, SESSION, () => next("ANALYSING")));
 
 registerScreen("ANALYSING", (root, next) => {
   root.innerHTML = `
@@ -505,7 +507,7 @@ registerScreen("ANALYSING", (root, next) => {
 
   // Resolve every pending Azure promise into result.azure on the session record.
   // Each pendingAzure is wrapped in .catch in the task modules, so this never rejects.
-  const allTasks = [SESSION.task1, SESSION.task2, SESSION.task3, SESSION.task4];
+  const allTasks = [SESSION.task1, SESSION.task2, SESSION.task3, SESSION.task4, SESSION.task5];
   const allPromises = [];
   for (const t of allTasks) {
     if (!t || !t.results) continue;
@@ -549,6 +551,7 @@ registerScreen("RESULTS", (root, next) => {
       SESSION.task2 = { selected: [], results: [] };
       SESSION.task3 = { selected: [], results: [] };
       SESSION.task4 = { selected: [], results: [] };
+      SESSION.task5 = { selected: [], results: [] };
     }
     next(target || "WELCOME");
   });

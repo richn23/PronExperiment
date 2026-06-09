@@ -1,23 +1,22 @@
-/* tasks/task3-pairs.js — Task 3: Minimal pairs listening (perception only)
+/* tasks/task4-repeat.js — Task 4: Listen and repeat
  *
- * 8 items, one per contrast (8 contrasts in data/minimal_pairs.json).
- * Pure listening task — no microphone, no recording.
+ * 8 items, one per contrast (same pairs as Task 3, different seed slot).
+ * The student listens to a sentence and repeats it — sentence text is never
+ * shown so they must repeat from ear, not by reading.
  *
  * Per-item flow:
- *   • Carrier sentence shown with target word blanked: "I noticed the ___…"
  *   • Audio plays automatically (listen 1).
- *   • Replay button available once (2 listens max).
- *   • Two large word-choice buttons (randomly ordered left/right).
- *   • Tap → green flash (correct) or red flash (wrong), blank fills.
- *   • ~1s pause, auto-advance to next item.
+ *   • Replay available once (2 listens max).
+ *   • "Start recording" → up to 8 s → Stop or auto-stop.
+ *   • Azure PA called with referenceText = full carrier (correct word filled in).
  *
- * Result shape per item (no wavBlob / pendingAzure — pure tap data):
- *   { pair_id, contrast, variant, correctWord, chosenWord, correct, listensUsed }
+ * Audio source: pre-generated MP3 at audio/<id>_<variant>.mp3, falls back to
+ * runtime Azure TTS.
  */
 
 (function (global) {
   function selectItems(pairs, seed) {
-    const rng = Utils.seededRandom(seed + 2);
+    const rng = Utils.seededRandom(seed + 3); // distinct seed slot from Task 3
 
     const byContrast = new Map();
     for (const p of pairs) {
@@ -38,43 +37,26 @@
     return carrier.replace(/_{2,}/, word);
   }
 
-  function blankCarrier(carrier) {
-    return Utils.escapeHtml(carrier).replace(/_{2,}/, '<span class="blank">______</span>');
-  }
-
-  function filledCarrier(carrier, word, status) {
-    const cls = status === "correct" ? "filled-correct"
-              : status === "wrong"   ? "filled-wrong"
-              : "filled-neutral";
-    return Utils.escapeHtml(carrier).replace(
-      /_{2,}/,
-      `<span class="${cls}">${Utils.escapeHtml(word)}</span>`
-    );
-  }
-
-  function runTask3(root, session, onComplete) {
+  function runTask4(root, session, onComplete) {
     let disposed = false;
+    let recCtrl = null;
     let interTimer = 0;
-    let revealTimer = 0;
     let currentAudio = null;
 
     const audioCache = new Map();
 
     const items = selectItems(session.data.pairs, session.seed);
-    session.task3.selected = items;
-    session.task3.results = [];
+    session.task4.selected = items;
+    session.task4.results = [];
 
     const state = {
       stage: "intro",
       idx: 0,
       listensUsed: 0,
-      answered: false,
-      orderLeftRight: null,
     };
 
     function clearTimers() {
-      if (interTimer)  { clearTimeout(interTimer);  interTimer  = 0; }
-      if (revealTimer) { clearTimeout(revealTimer); revealTimer = 0; }
+      if (interTimer) { clearTimeout(interTimer); interTimer = 0; }
     }
 
     function stopAudio() {
@@ -82,6 +64,13 @@
         try { currentAudio.pause(); } catch (_) {}
         try { currentAudio.src = ""; } catch (_) {}
         currentAudio = null;
+      }
+    }
+
+    function stopRecording() {
+      if (recCtrl) {
+        try { recCtrl.stop(); } catch (_) {}
+        recCtrl = null;
       }
     }
 
@@ -96,6 +85,7 @@
       disposed = true;
       clearTimers();
       stopAudio();
+      stopRecording();
       disposeCache();
     }
 
@@ -121,7 +111,9 @@
         try {
           blob = await AzureSpeech.synthesizeToBlob(text);
         } catch (err) {
-          throw new Error(`Couldn't load or synthesize audio for ${item.pair.id}: ${err.message}`);
+          throw new Error(
+            `Couldn't load or synthesize audio for ${item.pair.id} (${item.variant}): ${err.message}`
+          );
         }
       }
 
@@ -152,8 +144,8 @@
     function renderIntro() {
       root.innerHTML = `
         <header class="stack-tight">
-          <h2>Listen carefully</h2>
-          <p class="lede">You'll hear a sentence. Tap the word you heard.</p>
+          <h2>Listen and repeat</h2>
+          <p class="lede">You'll hear a sentence. Listen carefully, then repeat it out loud.</p>
         </header>
         <div class="spacer"></div>
         <button class="btn" id="start">Start</button>
@@ -162,14 +154,12 @@
     }
 
     // -------------------------------------------------------------------------
-    // Item
+    // Begin item
     // -------------------------------------------------------------------------
 
     function beginItem() {
       state.stage = "item";
       state.listensUsed = 0;
-      state.answered = false;
-      state.orderLeftRight = Math.random() < 0.5 ? ["a", "b"] : ["b", "a"];
 
       const item = items[state.idx];
 
@@ -183,50 +173,48 @@
       loadAudio(item)
         .then(() => {
           if (disposed) return;
-          renderItem();
+          renderListenAndRepeat();
         })
         .catch((err) => {
           if (disposed) return;
-          console.error("Audio load failed:", err);
-          // Record a null result and skip
-          session.task3.results.push({
+          console.error("Task 4 audio load failed:", err);
+          session.task4.results.push({
             pair_id: item.pair.id,
             contrast: item.pair.contrast,
             variant: item.variant,
-            correctWord: item.variant === "a" ? item.pair.word_a : item.pair.word_b,
-            chosenWord: null,
-            correct: null,
+            heardWord: item.variant === "a" ? item.pair.word_a : item.pair.word_b,
             listensUsed: 0,
+            durationMs: 0,
+            wavBlob: null,
+            pendingAzure: Promise.resolve({ error: true, message: err.message }),
             audioError: err.message,
           });
           advance();
         });
     }
 
-    function renderItem() {
+    // -------------------------------------------------------------------------
+    // Listen screen — sentence text never shown
+    // -------------------------------------------------------------------------
+
+    function renderListenAndRepeat() {
       const item = items[state.idx];
-      const [leftKey, rightKey] = state.orderLeftRight;
-      const leftWord  = leftKey  === "a" ? item.pair.word_a : item.pair.word_b;
-      const rightWord = rightKey === "a" ? item.pair.word_a : item.pair.word_b;
 
       root.innerHTML = `
         ${Utils.buildProgressDots(items.length, state.idx + 1)}
-        <div class="stack center">
-          <h2 style="text-align:center">Which word did you hear?</h2>
-          <div class="carrier-display" id="carrier">${blankCarrier(item.pair.carrier)}</div>
-        </div>
-        <div class="row" id="choices">
-          <button class="btn btn-secondary choice" data-key="${leftKey}">${Utils.escapeHtml(leftWord)}</button>
-          <button class="btn btn-secondary choice" data-key="${rightKey}">${Utils.escapeHtml(rightWord)}</button>
+        <div class="stack center" style="margin:auto">
+          <h2 style="text-align:center">Listen carefully</h2>
+          <p class="muted" style="text-align:center">Then repeat what you heard.</p>
         </div>
         <div class="row">
           <button class="btn-ghost" id="replay" type="button">↻ Replay</button>
         </div>
+        <div class="spacer"></div>
+        <button class="btn" id="record">Start recording</button>
       `;
 
-      const replayBtn   = root.querySelector("#replay");
-      const choiceBtns  = root.querySelectorAll(".choice");
-      const carrierEl   = root.querySelector("#carrier");
+      const replayBtn = root.querySelector("#replay");
+      const recordBtn = root.querySelector("#record");
 
       function refreshReplay() {
         replayBtn.disabled = state.listensUsed >= 2;
@@ -234,60 +222,99 @@
       }
 
       replayBtn.addEventListener("click", () => {
-        if (state.listensUsed >= 2 || state.answered) return;
+        if (state.listensUsed >= 2) return;
         playAudio(item).then(refreshReplay);
         refreshReplay();
       });
 
-      choiceBtns.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          if (state.answered) return;
-          state.answered = true;
+      recordBtn.addEventListener("click", () => startRecording(item));
 
-          const key = btn.dataset.key;
-          const correctKey = item.variant;
-          const isCorrect = key === correctKey;
-
-          const chosenWord  = key === "a" ? item.pair.word_a : item.pair.word_b;
-          const correctWord = correctKey === "a" ? item.pair.word_a : item.pair.word_b;
-
-          // Fill the carrier with the chosen word
-          carrierEl.innerHTML = filledCarrier(
-            item.pair.carrier,
-            chosenWord,
-            isCorrect ? "correct" : "wrong"
-          );
-
-          choiceBtns.forEach((b) => { b.disabled = true; });
-          btn.classList.add(isCorrect ? "choice-correct" : "choice-wrong");
-
-          // If wrong, also highlight the correct button
-          if (!isCorrect) {
-            choiceBtns.forEach((b) => {
-              if (b.dataset.key === correctKey) b.classList.add("choice-correct");
-            });
-          }
-
-          session.task3.results.push({
-            pair_id: item.pair.id,
-            contrast: item.pair.contrast,
-            variant: item.variant,
-            correctWord,
-            chosenWord,
-            correct: isCorrect,
-            listensUsed: state.listensUsed,
-          });
-
-          revealTimer = setTimeout(() => {
-            revealTimer = 0;
-            if (!disposed) advance();
-          }, 1100);
-        });
-      });
-
-      // Auto-play on entry
       playAudio(item).then(refreshReplay);
       refreshReplay();
+    }
+
+    // -------------------------------------------------------------------------
+    // Recording — no sentence text
+    // -------------------------------------------------------------------------
+
+    function startRecording(item) {
+      const maxMs = 8000;
+      const correctWord = item.variant === "a" ? item.pair.word_a : item.pair.word_b;
+      const reference = fillCarrier(item.pair.carrier, correctWord);
+
+      root.innerHTML = `
+        ${Utils.buildProgressDots(items.length, state.idx + 1)}
+        <div class="stack center" style="margin:auto">
+          <p class="muted">Repeat what you heard.</p>
+        </div>
+        <div class="rec-zone">
+          <div class="rec-indicator"><span class="pulse"></span>Recording</div>
+          <div class="countdown-bar"><div class="fill" id="countdown"></div></div>
+        </div>
+        <button class="btn btn-danger" id="stop">Stop</button>
+      `;
+
+      const countdownEl = root.querySelector("#countdown");
+      const stream = session.micStream;
+
+      try {
+        recCtrl = AudioUtils.startRecording(stream, {
+          maxMs,
+          onTick: (ms) => {
+            const remaining = Math.max(0, 1 - ms / maxMs);
+            countdownEl.style.transform = `scaleX(${remaining})`;
+          },
+        });
+      } catch (err) {
+        console.error("Failed to start Task 4 recording:", err);
+        finish(item, reference, null);
+        return;
+      }
+
+      root.querySelector("#stop").addEventListener("click", () => {
+        if (recCtrl) recCtrl.stop();
+      });
+
+      recCtrl.done
+        .then((result) => {
+          recCtrl = null;
+          if (disposed) return;
+          finish(item, reference, result);
+        })
+        .catch((err) => {
+          recCtrl = null;
+          if (disposed) return;
+          console.warn("Task 4 recording error:", err);
+          finish(item, reference, null);
+        });
+    }
+
+    function finish(item, reference, result) {
+      const wavBlob  = result ? result.wavBlob  : null;
+      const durationMs = result ? result.durationMs : 0;
+
+      const correctWord    = item.variant === "a" ? item.pair.word_a : item.pair.word_b;
+      const targetPhoneme  = item.variant === "a" ? item.pair.phoneme_a : item.pair.phoneme_b;
+
+      const pendingAzure = wavBlob
+        ? AzureSpeech.scorePronunciation(wavBlob, reference)
+            .catch((err) => ({ error: true, message: err && err.message || String(err) }))
+        : Promise.resolve({ error: true, message: "Recording unavailable" });
+
+      session.task4.results.push({
+        pair_id: item.pair.id,
+        contrast: item.pair.contrast,
+        variant: item.variant,
+        heardWord: correctWord,
+        targetPhoneme,
+        listensUsed: state.listensUsed,
+        reference,
+        durationMs,
+        wavBlob,
+        pendingAzure,
+      });
+
+      advance();
     }
 
     // -------------------------------------------------------------------------
@@ -316,8 +343,8 @@
     function renderTransition() {
       root.innerHTML = `
         <div class="stack center" style="margin:auto">
-          <h2>Good.</h2>
-          <p class="muted">Now you'll listen and repeat.</p>
+          <h2>Almost done.</h2>
+          <p class="muted">One more part.</p>
         </div>
       `;
       interTimer = setTimeout(() => {
@@ -339,5 +366,5 @@
     return dispose;
   }
 
-  global.Task3 = { run: runTask3, selectItems };
+  global.Task4 = { run: runTask4, selectItems };
 })(window);
