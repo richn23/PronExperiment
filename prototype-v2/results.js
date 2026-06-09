@@ -899,6 +899,9 @@
 
     const expectedSyl = sylls[expIdx];
     const actualSyl = sylls[verdict.actualIdx];
+    // Guard: Azure may return fewer syllables than the bank's stress_pattern length,
+    // leaving expectedSyl or actualSyl undefined. Skip rather than crash.
+    if (!expectedSyl || !actualSyl) return "";
 
     const meta = `${sylls.length} syllables · stress on ${ordinal(expIdx + 1)} (${esc((expectedSyl.text || "").toUpperCase())})`;
 
