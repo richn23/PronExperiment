@@ -132,6 +132,7 @@ registerScreen("MIC_CHECK", (root, next) => {
 
     <div class="spacer"></div>
     <button class="btn" id="continue" disabled>Sounds good — continue</button>
+    <button class="btn-ghost center" id="skip" style="align-self:center">Skip mic check</button>
   `;
 
   const canvas = root.querySelector("#micCanvas");
@@ -250,6 +251,8 @@ registerScreen("MIC_CHECK", (root, next) => {
     if (continueBtn.disabled) return;
     next("T1_INTRO");
   });
+
+  root.querySelector("#skip").addEventListener("click", () => next("T1_INTRO"));
 
   (async function start() {
     try {
