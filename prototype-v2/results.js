@@ -613,7 +613,7 @@
         ? "Couldn't pick out clear-pronunciation words — most Task 1 recordings had no clear speech detected. Please retake this part."
         : "No words this session scored ≥85 across every sound. Don't worry — it's a high bar. Keep practising and try again.";
       return `
-        <div class="report-card">
+        <div>
           <h2>Words you pronounced clearly</h2>
           <p class="lead">${esc(lead)}</p>
         </div>
@@ -625,7 +625,7 @@
       .join("");
 
     return `
-      <div class="report-card">
+      <div>
         <h2>Words you pronounced clearly</h2>
         <p class="lead">These words came out perfectly — every sound was clear.</p>
         <div class="word-chips">${chips}</div>
@@ -777,7 +777,7 @@
     const items = report.listening || [];
     if (!items.length) {
       return `
-        <div class="report-card">
+        <div>
           <h2>How well you heard the differences</h2>
           <p class="lead">No data this session.</p>
         </div>
@@ -808,7 +808,7 @@
     }).join("");
 
     return `
-      <div class="report-card">
+      <div>
         <h2>How well you heard the differences</h2>
         <p class="lead">${items.length} minimal pair${items.length === 1 ? "" : "s"} — ${correctCount} of ${items.length} identified correctly.</p>
         ${rows}
@@ -864,7 +864,7 @@
     const fs = report.freeSpeech;
     if (!fs || fs.state === "absent") {
       return `
-        <div class="report-card">
+        <div>
           <h2>Free speech</h2>
           <p class="lead">We didn't get usable data from the free speech section in this session. Try again to add this part of the picture — it shows how your pronunciation holds up when you choose your own words.</p>
         </div>
@@ -873,7 +873,7 @@
 
     if (fs.state === "low_confidence") {
       return `
-        <div class="report-card">
+        <div>
           <h2>Free speech</h2>
           <div class="note note-empty">We captured ${fs.attempts} attempt${fs.attempts === 1 ? "" : "s"} but couldn't get a clear enough transcript to score them. Try again in a quieter space, or speak a touch louder and more slowly.</div>
         </div>
@@ -893,7 +893,7 @@
     `).join("");
 
     return `
-      <div class="report-card">
+      <div>
         <h2>Free speech</h2>
         <p class="lead">Three open prompts. Average pronunciation score: <strong>${esc(fmt(fs.meanPron))}</strong>.</p>
         <div class="free-items">${items}</div>
@@ -912,75 +912,6 @@
           <h3 id="infoModalTitle">—</h3>
           <p id="infoModalText" style="font-size:14px;color:#374151;line-height:1.6;">—</p>
           <button class="modal-x" id="infoModalClose" type="button">Got it</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderHowModal() {
-    return `
-      <div class="modal-backdrop" id="howModal" role="dialog" aria-modal="true" aria-labelledby="howModalTitle">
-        <div class="modal">
-          <h3 id="howModalTitle">How your score is calculated</h3>
-          <p class="sub">Built on Microsoft Azure Speech AI · calibrated for English L2 learners</p>
-
-          <h4>The data source</h4>
-          <p>Every recording is sent to <strong>Azure Speech Services Pronunciation Assessment</strong> — the same speech AI used by Microsoft Reading Coach and a number of major language-learning platforms. It returns scores per individual sound, per syllable, and per sentence, plus pacing and intonation signals.</p>
-
-          <h4>The five dimensions</h4>
-          <table>
-            <thead><tr><th>Dimension</th><th>Weight</th><th>What it measures</th></tr></thead>
-            <tbody>
-              <tr><td>Phoneme accuracy</td><td>25%</td><td>Are the individual sounds correct?</td></tr>
-              <tr><td>Fluency</td><td>22%</td><td>Does speech flow at a natural pace, without unnatural pauses?</td></tr>
-              <tr><td>Word stress</td><td>18%</td><td>Is the right syllable emphasised in each word?</td></tr>
-              <tr><td>Consistency</td><td>18%</td><td>Is performance steady across items, or does it swing?</td></tr>
-              <tr><td>Sentence stability</td><td>17%</td><td>Does pronunciation hold steady when words combine into sentences?</td></tr>
-            </tbody>
-          </table>
-
-          <h4>The formula</h4>
-          <div class="formula">
-            Score = (Phoneme × 0.25)<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ (Fluency × 0.22)<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ (Stress × 0.18)<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ (Consistency × 0.18)<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ (Stability × 0.17)
-          </div>
-
-          <h4>Score bands</h4>
-          <table>
-            <tbody>
-              <tr><td><strong>85–100</strong></td><td>Clear and confident</td></tr>
-              <tr><td><strong>70–84</strong></td><td>Generally clear, some patterns to refine</td></tr>
-              <tr><td><strong>55–69</strong></td><td>Comprehensible but inconsistent</td></tr>
-              <tr><td><strong>40–54</strong></td><td>Listener has to work to follow</td></tr>
-              <tr><td><strong>0–39</strong></td><td>Difficult for a listener to follow</td></tr>
-            </tbody>
-          </table>
-
-          <h4>Why a composite, not a single number?</h4>
-          <p>Two learners can both score 80 overall — one through consistently good performance, one through a mix of strong and weak items. Listeners experience these very differently. The five dimensions make that difference visible, and let learners see <em>where</em> to focus, not just <em>how well</em> they did.</p>
-
-          <button class="modal-close" data-close="howModal" type="button">Got it</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderDimModal() {
-    return `
-      <div class="modal-backdrop" id="dimModal" role="dialog" aria-modal="true" aria-labelledby="dimModalTitle">
-        <div class="modal">
-          <h3 id="dimModalTitle">—</h3>
-          <p class="sub" id="dimModalSub">—</p>
-          <h4>What it measures</h4>
-          <p id="dimWhat">—</p>
-          <h4>How it's calculated</h4>
-          <p id="dimHow">—</p>
-          <h4>Why it matters</h4>
-          <p id="dimWhy">—</p>
-          <button class="modal-close" data-close="dimModal" type="button">Got it</button>
         </div>
       </div>
     `;
@@ -1117,309 +1048,10 @@
           ${unscoredTile}
         </div>
         <div class="note" style="margin-top:16px;">
-          <strong>Reading vs free speech:</strong> the reading rate covers Tasks 1, 2, and 4 — all script-based, so the words are chosen for you. Task 3 (minimal pairs) is a listening task with no speaking, so it doesn't count here. The free rate (Task 5) is when you pick your own words, which is the more useful diagnostic for fluency. Native English conversational pace is roughly 150–180 wpm; read-aloud and L2 free speech are naturally slower.
+          <strong>Reading vs free speech:</strong> the reading rate covers Tasks 1 and 2 — script-based read-aloud. Task 4 (listen and repeat) is also included since the reference text is fixed. Task 3 (minimal pairs) is a listening task with no speaking, so it doesn't count here. The free rate (Task 5) is when you pick your own words, which is the more useful diagnostic for fluency. Native English conversational pace is roughly 150–180 wpm; read-aloud and L2 free speech are naturally slower.
         </div>
       </div>
     `;
-  }
-
-  // =============================================================================
-  // Detailed analysis page — per-word stress visualisation.
-  // Pure render-and-classify on data we already capture (Words[].Syllables[]).
-  // No new Azure calls. Single-syllable words are skipped — they have no
-  // stress to assess.
-  // =============================================================================
-
-  // Azure returns Offset/Duration in 100-nanosecond units (the SDK convention).
-  // Divide by 10^7 to get seconds.
-  const HUNDRED_NS = 10000000;
-
-  function ordinal(n) {
-    if (n <= 0) return String(n);
-    const lastTwo = n % 100;
-    if (lastTwo >= 11 && lastTwo <= 13) return `${n}th`;
-    switch (n % 10) {
-      case 1: return `${n}st`;
-      case 2: return `${n}nd`;
-      case 3: return `${n}rd`;
-      default: return `${n}th`;
-    }
-  }
-
-  function lookupIpa(session, wordId, fallbackWord) {
-    const list = (session.data && session.data.words) || [];
-    const hit = list.find((w) => w.id === wordId)
-      || list.find((w) => (w.word || "").toLowerCase() === (fallbackWord || "").toLowerCase());
-    return hit && hit.ipa ? hit.ipa : "";
-  }
-
-  // Pull the syllable array off a Task 1 result. Returns null if Azure errored,
-  // returned no Words, or the syllable durations are missing — in which case
-  // the caller skips the row silently.
-  function extractSyllables(result) {
-    const azure = result && result.azure;
-    if (!azure || azure.error) return null;
-    const word = azure.json
-      && azure.json.NBest
-      && azure.json.NBest[0]
-      && azure.json.NBest[0].Words
-      && azure.json.NBest[0].Words[0];
-    if (!word || !Array.isArray(word.Syllables) || word.Syllables.length === 0) return null;
-    const sylls = word.Syllables.map((s) => ({
-      text: s.Grapheme || s.Syllable || "",
-      duration: typeof s.Duration === "number" ? s.Duration : 0,
-      score: s.PronunciationAssessment && s.PronunciationAssessment.AccuracyScore,
-    }));
-    if (sylls.some((s) => !s.duration || s.duration <= 0)) return null;
-    return sylls;
-  }
-
-  function wordLevelScore(result) {
-    const word = result && result.azure && result.azure.json
-      && result.azure.json.NBest && result.azure.json.NBest[0]
-      && result.azure.json.NBest[0].Words && result.azure.json.NBest[0].Words[0];
-    const acc = word && word.PronunciationAssessment && word.PronunciationAssessment.AccuracyScore;
-    return typeof acc === "number" ? Math.round(acc) : null;
-  }
-
-  // Returns the index of the primary stress in a stress_pattern array, or
-  // null if the pattern is malformed.
-  function expectedStressIdx(pattern) {
-    if (!Array.isArray(pattern)) return null;
-    const idx = pattern.indexOf(1);
-    return idx >= 0 ? idx : null;
-  }
-
-  // Stress-correctness logic with word-final lengthening compensation.
-  //
-  // The stressed syllable should be the longest. If the actual longest is the
-  // LAST syllable AND the second-longest sits at the expected stress position,
-  // we treat it as correct — word-final syllables can naturally lengthen even
-  // when the speaker stressed earlier in the word (classic case: "electricity"
-  // where "ty" ends up longest because it's word-final).
-  function classifyStress(durations, expectedIdx) {
-    if (!durations.length || expectedIdx == null) return null;
-    const sorted = durations.map((d, i) => ({ d, i })).sort((a, b) => b.d - a.d);
-    const longestIdx = sorted[0].i;
-    const secondIdx = sorted.length > 1 ? sorted[1].i : null;
-
-    let actualIdx = longestIdx;
-    let compensated = false;
-    if (longestIdx !== expectedIdx
-        && longestIdx === durations.length - 1
-        && secondIdx === expectedIdx) {
-      actualIdx = secondIdx;
-      compensated = true;
-    }
-    return {
-      expectedIdx,
-      actualIdx,
-      longestIdx,
-      compensated,
-      correct: actualIdx === expectedIdx,
-    };
-  }
-
-  function renderWordDetail(result, ipa) {
-    const sylls = extractSyllables(result);
-    if (!sylls) return ""; // Skip silently — broken row would mislead worse.
-
-    const expIdx = expectedStressIdx(result.stress_pattern);
-    if (expIdx == null) return "";
-
-    const durations = sylls.map((s) => s.duration);
-    const verdict = classifyStress(durations, expIdx);
-    if (!verdict) return "";
-
-    const expectedSyl = sylls[expIdx];
-    const actualSyl = sylls[verdict.actualIdx];
-    // Guard: Azure may return fewer syllables than the bank's stress_pattern length,
-    // leaving expectedSyl or actualSyl undefined. Skip rather than crash.
-    if (!expectedSyl || !actualSyl) return "";
-
-    const meta = `${sylls.length} syllables · stress on ${ordinal(expIdx + 1)} (${esc((expectedSyl.text || "").toUpperCase())})`;
-
-    // Bar widths: each .syl-bar takes flex = duration in 0.1s units. So a
-    // 0.39s syllable becomes flex: 3.9. Matches the mockup's hand-coded values.
-    function flexFor(s) { return (s.duration / HUNDRED_NS / 0.1).toFixed(1); }
-    function durSec(s) { return (s.duration / HUNDRED_NS).toFixed(2); }
-
-    const bars = sylls.map((s, i) => {
-      const isExp = i === verdict.expectedIdx;
-      const isAct = i === verdict.actualIdx;
-      const cls = ["syl-bar"];
-      if (isExp && isAct) cls.push("both");
-      else if (isExp) cls.push("stressed-expected");
-      else if (isAct) cls.push("stressed-actual");
-      return `<div class="${cls.join(" ")}" style="flex:${flexFor(s)};">${esc(s.text)}</div>`;
-    }).join("");
-
-    const durs = sylls.map((s) =>
-      `<span class="syl-dur" style="flex:${flexFor(s)};">${durSec(s)}s</span>`
-    ).join("");
-
-    // The verdict pill is the score for this view — page 2 is purely about
-    // stress placement, not overall word accuracy. We deliberately don't
-    // render the per-word AccuracyScore here; showing "82" next to "wrong
-    // stress" reads as a contradiction. Overall accuracy still lives on
-    // page 1 (sections, dimensions, focus areas).
-    const verdictHtml = verdict.correct
-      ? `<span class="stress-verdict verdict-ok">✓ Stress placed correctly${verdict.compensated ? " (allowing for word-final lengthening)" : ""}</span>`
-      : `<span class="stress-verdict verdict-off">Stress placed on "${esc(actualSyl.text)}" — should be on "${esc((expectedSyl.text || "").toUpperCase())}"</span>`;
-
-    return `
-      <div class="word-detail">
-        <div class="word-detail-head">
-          <span class="wd-word">${esc(result.word)}</span>${ipa ? `<span class="wd-ipa">${esc(ipa)}</span>` : ""}
-        </div>
-        <div class="wd-meta">${meta}</div>
-        <div class="syllable-bars">${bars}</div>
-        <div class="syl-durations">${durs}</div>
-        ${verdictHtml}
-      </div>
-    `;
-  }
-
-  // Static template-driven summary. The template branches on how many words
-  // were assessed and how many were off-stress. No LLM, no surprise wording.
-  function stressTakeaway(rows) {
-    if (!rows.length) return "";
-    const wrong = rows.filter((r) => !r.classify.correct);
-    const wrongCount = wrong.length;
-    const total = rows.length;
-
-    function pickExample(r) {
-      const exp = (r.expectedSyl.text || "").toUpperCase();
-      const act = r.actualSyl.text || "";
-      return { word: r.word, exp, act };
-    }
-
-    if (wrongCount === 0) {
-      return "On every multi-syllable word in this session you placed stress correctly. That's a strong stress-placement instinct — keep it going.";
-    }
-    if (wrongCount === total) {
-      const ex = pickExample(wrong[0]);
-      return `Stress placement was off on every multi-syllable word in this session. A clear example: <strong>${esc(ex.word)}</strong>, where stress landed on "<em>${esc(ex.act)}</em>" instead of "<em>${esc(ex.exp)}</em>". Stress is a strong rhythmic cue in English — practising deliberate placement on these words would help.`;
-    }
-    if (wrongCount === 1) {
-      const ex = pickExample(wrong[0]);
-      return `On most multi-syllable words you placed stress correctly. The notable exception was <strong>${esc(ex.word)}</strong>, where you stressed "<em>${esc(ex.act)}</em>" instead of "<em>${esc(ex.exp)}</em>".`;
-    }
-    const ex = pickExample(wrong[0]);
-    return `Most multi-syllable words landed stress correctly, but ${wrongCount} were off — the clearest example was <strong>${esc(ex.word)}</strong> (stress on "<em>${esc(ex.act)}</em>" instead of "<em>${esc(ex.exp)}</em>").`;
-  }
-
-  function renderDetailPage(session, report) {
-    // 1. Filter to multi-syllable Task 1 words with usable Azure data.
-    // 2. For each, classify stress + capture display data.
-    // 3. Sort by score asc (most actionable first), then render.
-    const rows = [];
-    for (const r of (session.task1.results || [])) {
-      if (!r || (r.syllables || 0) < 2) continue;
-      const sylls = extractSyllables(r);
-      if (!sylls) continue;
-      const expIdx = expectedStressIdx(r.stress_pattern);
-      if (expIdx == null) continue;
-      const verdict = classifyStress(sylls.map((s) => s.duration), expIdx);
-      if (!verdict) continue;
-      const score = wordLevelScore(r);
-      rows.push({
-        result: r,
-        word: r.word,
-        score: score == null ? -1 : score,
-        classify: verdict,
-        expectedSyl: sylls[verdict.expectedIdx],
-        actualSyl: sylls[verdict.actualIdx],
-      });
-    }
-    rows.sort((a, b) => a.score - b.score);
-
-    if (!rows.length) {
-      const t1Flagged = report && report.qualityFlags && report.qualityFlags.task1 && report.qualityFlags.task1.flagged;
-      const message = t1Flagged
-        ? `Couldn't analyse stress for this session — most Task 1 recordings had no clear speech detected. Please retake the test in a quiet space with the mic close to you.`
-        : `Not enough multi-syllable words in this session for a stress breakdown — try another session.`;
-      return `
-        <div class="page" data-page="detail">
-          <div class="report-card">
-            <h2>Detailed analysis</h2>
-            <p class="muted">${esc(message)}</p>
-          </div>
-        </div>
-      `;
-    }
-
-    const intro = `
-      <div class="report-card">
-        <h2>Detailed analysis</h2>
-        <p class="muted" style="margin-bottom:8px;">A word-by-word breakdown showing how long each syllable lasted and where you placed your stress. The longest bar is the syllable you emphasised. The yellow-highlighted block is where the stress should fall.</p>
-        <div class="legend">
-          <span><span class="legend-swatch" style="background:#FCD34D;"></span>Where stress should fall</span>
-          <span><span class="legend-swatch" style="background:#DBEAFE;"></span>Other syllables</span>
-          <span><span class="legend-swatch" style="background:#10B981;"></span>Stress placed correctly</span>
-        </div>
-      </div>
-    `;
-
-    const wordsHtml = rows.map((row) => {
-      const ipa = lookupIpa(session, row.result.word_id, row.word);
-      return renderWordDetail(row.result, ipa);
-    }).join("");
-
-    const breakdowns = `
-      <div class="report-card">
-        <h2>Multi-syllable words from this session</h2>
-        ${wordsHtml}
-      </div>
-    `;
-
-    const takeaway = `
-      <div class="report-card">
-        <h2>What you can take from this</h2>
-        <p style="line-height:1.7;">${stressTakeaway(rows)}</p>
-      </div>
-    `;
-
-    const method = `
-      <div class="report-card">
-        <h2>About this view</h2>
-        <p class="muted" style="line-height:1.6;">Bar widths show how long you held each syllable. In English, the stressed syllable is naturally longer than the unstressed ones. By comparing your timing against the expected stress pattern, we can see whether your stress placement matches a native speaker's.</p>
-        <p class="muted" style="margin-top:10px; font-size:13px;">Note: word-final syllables can sometimes appear longest due to natural lengthening at the end of a word. The system compensates for this when judging stress placement.</p>
-      </div>
-    `;
-
-    return `
-      <div class="page" data-page="detail">
-        ${intro}
-        ${breakdowns}
-        ${takeaway}
-        ${method}
-      </div>
-    `;
-  }
-
-  function renderTabs() {
-    return `
-      <div class="tabs" role="tablist">
-        <button class="tab active" type="button" data-page="summary" role="tab">Summary</button>
-        <button class="tab" type="button" data-page="detail" role="tab">Detailed analysis</button>
-      </div>
-    `;
-  }
-
-  function bindTabs(root) {
-    const tabs = Array.from(root.querySelectorAll(".tabs .tab"));
-    const pages = Array.from(root.querySelectorAll(".page"));
-    function show(name) {
-      for (const t of tabs) t.classList.toggle("active", t.dataset.page === name);
-      for (const p of pages) p.classList.toggle("active", p.dataset.page === name);
-      window.scrollTo(0, 0);
-    }
-    for (const t of tabs) t.addEventListener("click", () => show(t.dataset.page));
-    return function dispose() {
-      // Listeners are torn down implicitly when innerHTML is replaced on
-      // screen change; nothing to do here.
-    };
   }
 
   // =============================================================================
@@ -1654,68 +1286,21 @@
       });
     });
 
+    // Dimension info buttons (used in the Tier-4 dimension breakdown)
+    root.querySelectorAll(".info-btn-sm[data-dim]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-dim");
+        const info = DIM_INFO[key];
+        if (info) open(info.title, `<strong>${esc(info.sub)}</strong><br><br>${esc(info.what)}<br><br><em>How:</em> ${esc(info.how)}<br><br><em>Why it matters:</em> ${esc(info.why)}`);
+      });
+    });
+
     if (closeBtn) closeBtn.addEventListener("click", close);
     if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
 
     function onKey(e) { if (e.key === "Escape") close(); }
     document.addEventListener("keydown", onKey);
 
-    return function dispose() {
-      document.removeEventListener("keydown", onKey);
-    };
-  }
-
-  function bindModals(root) {
-    const howModal = root.querySelector("#howModal");
-    const dimModal = root.querySelector("#dimModal");
-
-    function openHow() { if (howModal) howModal.classList.add("open"); }
-    function openDim(key) {
-      if (!dimModal) return;
-      const info = DIM_INFO[key];
-      if (!info) return;
-      dimModal.querySelector("#dimModalTitle").textContent = info.title;
-      dimModal.querySelector("#dimModalSub").textContent = info.sub;
-      dimModal.querySelector("#dimWhat").textContent = info.what;
-      dimModal.querySelector("#dimHow").textContent = info.how;
-      dimModal.querySelector("#dimWhy").textContent = info.why;
-      dimModal.classList.add("open");
-    }
-    function closeAll() {
-      if (howModal) howModal.classList.remove("open");
-      if (dimModal) dimModal.classList.remove("open");
-    }
-
-    // Backdrop click closes (only when the click is on the backdrop itself)
-    [howModal, dimModal].forEach((m) => {
-      if (!m) return;
-      m.addEventListener("click", (e) => {
-        if (e.target === m) m.classList.remove("open");
-      });
-    });
-
-    // Buttons that open modals
-    root.querySelectorAll('[data-modal="how"]').forEach((b) =>
-      b.addEventListener("click", openHow)
-    );
-    root.querySelectorAll('[data-modal="dim"]').forEach((b) =>
-      b.addEventListener("click", () => openDim(b.getAttribute("data-dim")))
-    );
-
-    // Close buttons
-    root.querySelectorAll('[data-close]').forEach((b) =>
-      b.addEventListener("click", () => {
-        const id = b.getAttribute("data-close");
-        const m = root.querySelector(`#${id}`);
-        if (m) m.classList.remove("open");
-      })
-    );
-
-    // Escape key
-    function onKey(e) {
-      if (e.key === "Escape") closeAll();
-    }
-    document.addEventListener("keydown", onKey);
     return function dispose() {
       document.removeEventListener("keydown", onKey);
     };
