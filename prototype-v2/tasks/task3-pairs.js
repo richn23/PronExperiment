@@ -215,23 +215,44 @@
           <h2 style="text-align:center">Which word did you hear?</h2>
           <div class="carrier-display" id="carrier">${blankCarrier(item.pair.carrier)}</div>
         </div>
-        <div class="row" id="choices">
+        <div class="stack center" style="margin-top:16px;">
+          <button class="btn" id="playBtn" type="button">▶ Tap to hear</button>
+        </div>
+        <div class="row" id="choices" style="visibility:hidden; pointer-events:none;">
           <button class="btn btn-secondary choice" data-key="${leftKey}">${Utils.escapeHtml(leftWord)}</button>
           <button class="btn btn-secondary choice" data-key="${rightKey}">${Utils.escapeHtml(rightWord)}</button>
         </div>
         <div class="row">
-          <button class="btn-ghost" id="replay" type="button">↻ Replay</button>
+          <button class="btn-ghost" id="replay" type="button" style="visibility:hidden;">↻ Replay</button>
         </div>
       `;
 
+      const playBtn     = root.querySelector("#playBtn");
       const replayBtn   = root.querySelector("#replay");
+      const choicesEl   = root.querySelector("#choices");
       const choiceBtns  = root.querySelectorAll(".choice");
       const carrierEl   = root.querySelector("#carrier");
+
+      function showChoices() {
+        choicesEl.style.visibility = "";
+        choicesEl.style.pointerEvents = "";
+        replayBtn.style.visibility = "";
+      }
 
       function refreshReplay() {
         replayBtn.disabled = state.listensUsed >= 2;
         replayBtn.style.opacity = state.listensUsed >= 2 ? "0.4" : "";
       }
+
+      playBtn.addEventListener("click", () => {
+        playBtn.disabled = true;
+        playBtn.textContent = "▶ Playing…";
+        playAudio(item).then(() => {
+          playBtn.style.display = "none";
+          showChoices();
+          refreshReplay();
+        });
+      });
 
       replayBtn.addEventListener("click", () => {
         if (state.listensUsed >= 2 || state.answered) return;
@@ -251,7 +272,6 @@
           const chosenWord  = key === "a" ? item.pair.word_a : item.pair.word_b;
           const correctWord = correctKey === "a" ? item.pair.word_a : item.pair.word_b;
 
-          // Fill the carrier with the chosen word
           carrierEl.innerHTML = filledCarrier(
             item.pair.carrier,
             chosenWord,
@@ -261,7 +281,6 @@
           choiceBtns.forEach((b) => { b.disabled = true; });
           btn.classList.add(isCorrect ? "choice-correct" : "choice-wrong");
 
-          // If wrong, also highlight the correct button
           if (!isCorrect) {
             choiceBtns.forEach((b) => {
               if (b.dataset.key === correctKey) b.classList.add("choice-correct");
@@ -284,10 +303,6 @@
           }, 1100);
         });
       });
-
-      // Auto-play on entry
-      playAudio(item).then(refreshReplay);
-      refreshReplay();
     }
 
     // -------------------------------------------------------------------------

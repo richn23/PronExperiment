@@ -206,20 +206,39 @@
           <h2 style="text-align:center">Listen carefully</h2>
           <p class="muted" style="text-align:center">Then repeat what you heard.</p>
         </div>
+        <div class="stack center" style="margin-top:16px;">
+          <button class="btn" id="playBtn" type="button">▶ Tap to hear</button>
+        </div>
         <div class="row">
-          <button class="btn-ghost" id="replay" type="button">↻ Replay</button>
+          <button class="btn-ghost" id="replay" type="button" style="visibility:hidden;">↻ Replay</button>
         </div>
         <div class="spacer"></div>
-        <button class="btn" id="record">Start recording</button>
+        <button class="btn" id="record" style="visibility:hidden;">Start recording</button>
       `;
 
+      const playBtn   = root.querySelector("#playBtn");
       const replayBtn = root.querySelector("#replay");
       const recordBtn = root.querySelector("#record");
+
+      function showRecordControls() {
+        replayBtn.style.visibility = "";
+        recordBtn.style.visibility = "";
+      }
 
       function refreshReplay() {
         replayBtn.disabled = state.listensUsed >= 2;
         replayBtn.style.opacity = state.listensUsed >= 2 ? "0.4" : "";
       }
+
+      playBtn.addEventListener("click", () => {
+        playBtn.disabled = true;
+        playBtn.textContent = "▶ Playing…";
+        playAudio(item).then(() => {
+          playBtn.style.display = "none";
+          showRecordControls();
+          refreshReplay();
+        });
+      });
 
       replayBtn.addEventListener("click", () => {
         if (state.listensUsed >= 2) return;
@@ -228,9 +247,6 @@
       });
 
       recordBtn.addEventListener("click", () => startRecording(item));
-
-      playAudio(item).then(refreshReplay);
-      refreshReplay();
     }
 
     // -------------------------------------------------------------------------
