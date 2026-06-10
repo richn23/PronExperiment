@@ -254,6 +254,9 @@
     // -------------------------------------------------------------------------
 
     function startRecording(item) {
+      // A replay may still be playing — stop it so the model voice doesn't
+      // bleed into (or get scored as) the student's recording.
+      stopAudio();
       const maxMs = 8000;
       const correctWord = item.variant === "a" ? item.pair.word_a : item.pair.word_b;
       const reference = fillCarrier(item.pair.carrier, correctWord);

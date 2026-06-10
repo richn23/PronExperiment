@@ -271,11 +271,13 @@
           recCtrl = null;
           if (disposed) return;
           console.warn("Recording resolved with error:", err);
-          advanceFromWord(isPractice);
+          // Push an error placeholder so results stays aligned with selected —
+          // a dropped row would silently shrink the report and the export.
+          finishWordWithoutScore(word, isPractice, err && err.message || String(err));
         });
     }
 
-    function finishWordWithoutScore(word, isPractice) {
+    function finishWordWithoutScore(word, isPractice, message) {
       if (!isPractice) {
         session.task1.results.push({
           word_id: word.id,
@@ -286,7 +288,7 @@
           hinted: !!hintsUsed[word.id],
           durationMs: 0,
           wavBlob: null,
-          pendingAzure: Promise.resolve({ error: true, message: "Recording unavailable" }),
+          pendingAzure: Promise.resolve({ error: true, message: message || "Recording unavailable" }),
         });
       }
       advanceFromWord(isPractice);

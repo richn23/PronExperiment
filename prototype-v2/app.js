@@ -253,7 +253,21 @@ registerScreen("MIC_CHECK", (root, next) => {
     next("T1_INTRO");
   });
 
-  root.querySelector("#skip").addEventListener("click", () => next("T1_INTRO"));
+  // Skip bypasses the level check, not the mic itself — the recording tasks
+  // still need a live stream, so acquire one before moving on.
+  root.querySelector("#skip").addEventListener("click", async () => {
+    try {
+      SESSION.micStream = await AudioUtils.ensureLiveStream(SESSION.micStream);
+      next("T1_INTRO");
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err && err.name === "NotAllowedError"
+          ? "We need microphone permission to run the test. Please allow access and try again."
+          : `Couldn't access the microphone: ${err && err.message ? err.message : err}`;
+      showError(msg);
+    }
+  });
 
   (async function start() {
     try {

@@ -484,6 +484,8 @@
     const rows = report.hearSay || [];
     if (!rows.length) return "";
 
+    // T3 and T4 test different words of the same contrast, so each column
+    // names the word that verdict actually came from.
     const tableRows = rows.map((r) => {
       const hearIcon = r.hearCorrect === true  ? `<span class="ok">&#x2713;</span>`
                      : r.hearCorrect === false ? `<span class="no">&#x2717;</span>`
@@ -491,10 +493,14 @@
       const sayIcon  = r.sayCorrect  === true  ? `<span class="ok">&#x2713;</span>`
                      : r.sayCorrect  === false ? `<span class="no">&#x2717;</span>`
                      : `<span style="color:#9CA3AF">—</span>`;
+      const hearWord = r.hearCorrect !== null && r.hearWord
+        ? `<div style="font-size:11px;color:#6B7280;">${esc(r.hearWord)}</div>` : "";
+      const sayWord = r.sayCorrect !== null && r.sayWord
+        ? `<div style="font-size:11px;color:#6B7280;">${esc(r.sayWord)}</div>` : "";
       return `<tr>
         <td>${esc(r.label || r.contrast)}</td>
-        <td style="text-align:center">${hearIcon}</td>
-        <td style="text-align:center">${sayIcon}</td>
+        <td style="text-align:center">${hearIcon}${hearWord}</td>
+        <td style="text-align:center">${sayIcon}${sayWord}</td>
       </tr>`;
     }).join("");
 

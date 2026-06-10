@@ -528,28 +528,33 @@
     const pairs = (session.data && session.data.pairs) || [];
     const byId = new Map(pairs.map((p) => [p.id, p]));
 
-    // T3 map: contrast → { label, wordA, wordB, hearCorrect }
+    // T3 and T4 select one item per contrast but with different seeds, so they
+    // usually test DIFFERENT pairs of the same contrast (e.g. T3 "ship/sheep",
+    // T4 "mill"). Each half therefore carries its own word — never borrow the
+    // other task's words.
+
+    // T3 map: contrast → { label, hearWord, hearCorrect }
     const t3Map = new Map();
     for (const r of (session.task3 && session.task3.results || [])) {
       const pair = byId.get(r.pair_id);
-      const label = pair && pair.contrast_label
-        ? pair.contrast_label
-        : (pair ? `${pair.word_a} / ${pair.word_b}` : r.contrast);
+      const label = pair && pair.contrast_label ? pair.contrast_label : r.contrast;
       t3Map.set(r.contrast, {
         label,
-        wordA: pair ? pair.word_a : null,
-        wordB: pair ? pair.word_b : null,
+        hearWord: r.correctWord || null,
         hearCorrect: typeof r.correct === "boolean" ? r.correct : null,
       });
     }
 
-    // T4 map: contrast → sayCorrect (target word accuracy ≥ 70)
+    // T4 map: contrast → { sayWord, sayCorrect } (target word accuracy ≥ 70)
     // Audio-load errors count as false (attempted, failed) not null (no attempt).
     const t4Map = new Map();
     for (const r of (session.task4 && session.task4.results || [])) {
-      if (r.audioError) { t4Map.set(r.contrast, false); continue; }
+      if (r.audioError) { t4Map.set(r.contrast, { sayWord: r.heardWord || null, sayCorrect: false }); continue; }
       const acc = task4TargetWordAccuracy(r);
-      t4Map.set(r.contrast, typeof acc === "number" ? acc >= 70 : null);
+      t4Map.set(r.contrast, {
+        sayWord: r.heardWord || null,
+        sayCorrect: typeof acc === "number" ? acc >= 70 : null,
+      });
     }
 
     // Merge (T3 drives order; add any T4-only rows at end)
@@ -557,18 +562,19 @@
     const seen = new Set();
     for (const [contrast, t3] of t3Map) {
       seen.add(contrast);
+      const t4 = t4Map.get(contrast);
       rows.push({
         contrast,
         label: t3.label,
-        wordA: t3.wordA,
-        wordB: t3.wordB,
+        hearWord: t3.hearWord,
+        sayWord: t4 ? t4.sayWord : null,
         hearCorrect: t3.hearCorrect,
-        sayCorrect: t4Map.has(contrast) ? t4Map.get(contrast) : null,
+        sayCorrect: t4 ? t4.sayCorrect : null,
       });
     }
-    for (const [contrast, sayCorrect] of t4Map) {
+    for (const [contrast, t4] of t4Map) {
       if (!seen.has(contrast)) {
-        rows.push({ contrast, label: contrast, wordA: null, wordB: null, hearCorrect: null, sayCorrect });
+        rows.push({ contrast, label: contrast, hearWord: null, sayWord: t4.sayWord, hearCorrect: null, sayCorrect: t4.sayCorrect });
       }
     }
     return rows;
